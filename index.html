@@ -8,7 +8,7 @@
     
     <!-- Preload hints для критичных ресурсов -->
     <link rel="preload" as="image" href="https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg">
-    <link rel="preload" as="image" href="https://ltdfoto.ru/images/2026/05/06/catModGif.gif">
+    <link rel="preload" as="image" href="./images/catModGif.gif">
     
     <style>
         :root {
@@ -200,7 +200,7 @@
 </head>
 <body>
     <div id="loadingScreen">
-        <img id="loadingGif" src="https://ltdfoto.ru/images/2026/05/06/catModGif.gif" alt="Loading">
+        <img id="loadingGif" src="./images/catModGif.gif" alt="Loading">
         <div id="loadingText">ЗАГРУЗКА, ЖДИТЕ...</div>
         <div id="loadingWarn" hidden></div>
     </div>
@@ -434,11 +434,11 @@
         // ========== ПРЕДЗАГРУЗКА ==========
         function preloadImages() {
             const baseUrls = [
-                'https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg',
-                'https://i126.fastpic.org/big/2026/0115/e9/84e27a11b9786f335d5d8744c6eb1ce9.png',
-                'https://ltdfoto.ru/images/2026/05/06/catModGif.gif',
-                'https://i127.fastpic.org/big/2026/0520/24/9f48aa5698c31345e8c381af8a8df824.png',
-                'https://allwebs.ru/images/2025/11/30/01a96644be52ee9de5ced2f7245088df.png',
+                './images/BGMod.jpg',
+                './images/lightsMod.png',
+                './images/catModGif.gif',
+                './images/off.PNG',
+                './images/on.png',
             ];
 
             const urls = [
