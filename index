@@ -1,0 +1,905 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VHS-кассеты интерактивные</title>
+    
+    <!-- Preload hints для критичных ресурсов -->
+    <link rel="preload" as="image" href="https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg">
+    <link rel="preload" as="image" href="https://ltdfoto.ru/images/2026/05/06/catModGif.gif">
+    
+    <style>
+        :root {
+            --container-w: 1265px;
+            --container-h: 550px;
+            --poster-default-w: 300px;
+            --poster-aspect: 1.4;
+            --expand-offset-y: -10px;
+            --expand-scale-start: 0.2;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scene {
+            position: relative;
+            filter: brightness(0.15);
+            transition: filter 0.1s ease;
+        }
+        
+        .container-wrapper,
+        .container,
+        .overlay-container,
+        .content-layer {
+            width: var(--container-w);
+            height: var(--container-h);
+        }
+        
+        .container-wrapper {
+            position: relative;
+            overflow: visible;
+        }
+        
+        .container {
+            background-image: url('https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg');
+            background-size: auto;
+            background-repeat: no-repeat;
+            background-position: center 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .overlay-container {
+            position: absolute;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 6;
+        }
+        
+        .overlay-image {
+            position: absolute;
+            top: 0;
+            left: -50px;
+            width: 1367px;
+            height: 617px;
+            transition: opacity 0.2s ease;
+        }
+        
+        .content-layer {
+            position: relative;
+            overflow: visible;
+        }
+        
+        .vhs-cassette {
+            position: absolute;
+            width: 28px;
+            height: 192px;
+            box-shadow: 
+                0 6px 18px rgba(0, 0, 0, 0.85),
+                0 3px 10px rgba(0, 0, 0, 0.75);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            z-index: 10;
+        }
+        
+        .vhs-poster {
+            position: absolute;
+            width: 300px;
+            height: auto;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 8px 24px rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            z-index: 20;
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: none;
+            transform-origin: top left;
+            will-change: transform;
+        }
+        
+        .vhs-poster.poster-visible {
+            display: block;
+        }
+        
+        .vhs-poster.expanding {
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .light-switch {
+            position: absolute;
+            width: 56px;
+            height: 93px;
+            bottom: 10px;
+            right: 210px;
+            cursor: pointer;
+            z-index: 30;
+            object-fit: none;
+        }
+        
+        /* ========== ЗВУКОВАЯ ОБЛАСТЬ (полностью невидимая) ========== */
+        .vhs-sound-zone {
+            position: absolute;
+            left: 320px;
+            bottom: 1px;
+            width: 590px;
+            height: 90px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 15;
+        }
+        
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: default;
+        }
+        
+        #loadingGif {
+            margin-bottom: 20px;
+            max-width: 200px;
+            height: auto;
+        }
+        
+        #loadingText {
+            color: #888;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            text-align: center;
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+        
+        #loadingText.ready {
+            color: #fff;
+            text-shadow: 0 0 10px #fff, 0 0 20px #fff;
+        }
+        
+        #loadingWarn {
+            margin-top: 14px;
+            color: #ffb347;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            text-align: center;
+            max-width: 640px;
+            pointer-events: none;
+        }
+        
+        #loadingScreen.ready {
+            cursor: pointer;
+        }
+        
+        .preload-bg {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background-image: url('https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg');
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <img id="loadingGif" src="https://ltdfoto.ru/images/2026/05/06/catModGif.gif" alt="Loading">
+        <div id="loadingText">ЗАГРУЗКА, ЖДИТЕ...</div>
+        <div id="loadingWarn" hidden></div>
+    </div>
+    
+    <div class="preload-bg"></div>
+    
+    <div class="scene" id="scene" style="display: none;">
+        <div class="container-wrapper">
+            <div class="content-layer" id="contentLayer">
+                <div class="container" id="container"></div>
+                <div id="vhsSoundZone" class="vhs-sound-zone"></div>
+                <img id="lightSwitch" class="light-switch" src="https://i127.fastpic.org/big/2026/0520/24/9f48aa5698c31345e8c381af8a8df824.png" alt="Выключатель света">
+            </div>
+        </div>
+    </div>
+    
+    <div class="overlay-container" id="overlayContainer">
+        <img src="https://i126.fastpic.org/big/2026/0115/e9/84e27a11b9786f335d5d8744c6eb1ce9.png" class="overlay-image" id="overlayImage" alt="Overlay">
+    </div>
+
+    <script>
+        // ========== КОНСТАНТЫ ==========
+        const LAYOUT = {
+            CONTAINER_W: 1265,
+            CONTAINER_H: 550,
+            POSTER_DEFAULT_W: 300,
+            POSTER_ASPECT_RATIO: 420 / 300,
+            EXPAND_OFFSET_Y: -10,
+            EXPAND_SCALE_START: 0.2,
+            EXPAND_CENTER_TARGET_X: 1200,
+        };
+        
+        const GRID = {
+            CASSETTE_W: 28,
+            CASSETTE_H: 192,
+            COLS: 36,
+            ROWS: 3,
+            GAP_X: 6,
+            GAP_Y: 10,
+            EXTRA_ROW2_OFFSET: 5,
+            EXTRA_ROW3_OFFSET: 13,
+            GLOBAL_OFFSET_X: 6,
+            SKIP_AFTER: 18,
+        };
+        
+        const AUDIO_URLS = {
+            // Звуки касания кассеты на полке (случайный из двух)
+            pickSound1: 'https://files.catbox.moe/c0lzmw.mp3',   // cassetePick1
+            pickSound2: 'https://files.catbox.moe/x3s3c1.mp3',   // cassetePick2
+            // Звук доставания кассеты / разворачивания постера (один звук)
+            openSounds: [
+                'https://files.catbox.moe/ohwhwa.mp3',
+            ],
+            backgroundMusic: 'https://files.catbox.moe/klcpj0.aac',
+            // Звук выключателя света
+            switchSound: 'https://files.catbox.moe/yerd9m.mp3',
+            // Звуки мерцания света (случайный из трёх)
+            flickerSounds: [
+                'https://files.catbox.moe/bd3vh8.mp3',
+                'https://files.catbox.moe/ag4p6o.mp3',
+                'https://files.catbox.moe/gdruh6.mp3',
+            ],
+            // Звуки звуковой области (случайный из двух)
+            vhsSounds: [
+                'https://files.catbox.moe/xjc9nd.mp3',
+                'https://files.catbox.moe/i71e30.mp3',
+            ],
+        };
+        
+        const LIGHT_SWITCH_SRC = {
+            off: 'https://i127.fastpic.org/big/2026/0520/24/9f48aa5698c31345e8c381af8a8df824.png',
+            on: 'https://allwebs.ru/images/2025/11/30/01a96644be52ee9de5ced2f7245088df.png',
+        };
+
+        // ========== ДАННЫЕ ==========
+        const cassettes = [
+            { cassette: 'https://allwebs.ru/images/2025/12/01/0755484bf9f9007635bc11ce52899af9.jpg', poster: 'https://allwebs.ru/images/2025/12/01/54eda2f0b775f22cd279949c9ea4b73f.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/64c5db76c71a9483619066db473bd62f.jpg', poster: 'https://allwebs.ru/images/2025/12/02/1df945f4d76bee1f889cc20b76b86ac6.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0507/b2/e986f625643aaaa7fed71c5d0b86ebb2.jpg', poster: 'https://i127.fastpic.org/big/2026/0507/1a/f98da6db3236378fc616851e0ecc051a.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/6d7110c75be5f902c0d5ec86562b474f.jpg', poster: 'https://allwebs.ru/images/2025/12/01/593f0daedc07478b65e1faab401c0ac8.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0625/3b/7e95493271084f4f84eb53b4058a693b.jpg', poster: 'https://i127.fastpic.org/big/2026/0625/27/a76c9f84e5937189aff364ff3f8d2527.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0526/ea/7acc1bd4b5aae00c104ad5f4593843ea.jpg', poster: 'https://i127.fastpic.org/big/2026/0526/a5/719eeed795e8a2c62fa22b5d0dac3ba5.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0627/f2/bb1b0a235f3911dc83dac241ff30b7f2.jpg', poster: 'https://i127.fastpic.org/big/2026/0627/a8/a38d9ffce5d0a185a47fe2a4e08111a8.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0614/e9/08f34626cf5153536f9ed728fe06bde9.jpg', poster: 'https://i127.fastpic.org/big/2026/0614/09/24d2f36a7aa38b64a7d156198045fd09.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/5438f733dc172c7f1e1facd76a184308.jpg', poster: 'https://allwebs.ru/images/2025/12/02/09e52865446183d1e850ae8f73d63b60.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0712/f4/4a6a108e70ffa0450549a4cfb8bfaaf4.jpg', poster: 'https://i127.fastpic.org/big/2026/0712/dc/efedd84b543b0e085f842635eecaa5dc.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/11/30/ca79025f90e9f52192670a9129cd91f2.jpg', poster: 'https://allwebs.ru/images/2025/12/02/9df8a13480f561fe2a78763453ea9d36.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0614/ed/2ac19d00daf86faf3e9706e0ee3323ed.jpg', poster: 'https://i127.fastpic.org/big/2026/0614/82/58836021e6be4f92ecaee5791e503082.jpg' },
+            { cassette: 'https://i126.fastpic.org/big/2025/1228/01/e1babc5b2e3a48e78faddd3971c80901.jpg', poster: 'https://i126.fastpic.org/big/2025/1228/d4/5693902456bf90477419b4cbbfba10d4.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0531/25/854d9d1be3cecc4c59f6d026d2feab25.jpg', poster: 'https://i127.fastpic.org/big/2026/0531/da/01c3e44c8aa512eb6664c19e5eff59da.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0515/4d/3d464a070566188cd7bf214a7dcc264d.jpg', poster: 'https://i127.fastpic.org/big/2026/0515/d9/23109b24bc6ecee431c31f2b7705dbd9.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0615/b0/ffbec81982d093f8ff9a2d10dc7e0eb0.jpg', poster: 'https://i127.fastpic.org/big/2026/0615/9f/5efec84d677af830aa74ebc4e53a179f.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/39036be5c6fbba7bc2da0e4655cda93e.jpg', poster: 'https://allwebs.ru/images/2025/12/02/b90657fe766685ac94db28031732b80e.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/0fa4ce03ebb038fdcc273d91a6166170.jpg', poster: 'https://i127.fastpic.org/big/2026/0518/7b/b0d091860e079b2a4d16ebc56403cc7b.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/4fc8f57e593a72e9dc655ccc375c8ccb.jpg', poster: 'https://allwebs.ru/images/2025/12/01/d93f90f83d28264445e2125c03336e61.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0727/0a/736e7af36c8ba4e48eaf7e192012180a.jpg', poster: 'https://i128.fastpic.org/big/2026/0727/22/c4a133e020afaa6499725b717a3a1922.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0811/b8/7b3c7a4d3855ab6434042363713f53b8.jpg', poster: 'https://i128.fastpic.org/big/2026/0811/88/6801329d72dc84510d90a4633b24d188.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0612/ce/e9423245038f3511d32e3b33a8ee4ace.jpg', poster: 'https://i127.fastpic.org/big/2026/0612/ed/8034e6e06203226f5d9c5633394748ed.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/e9a80ac9793f4e547c3b946616680a26.jpg', poster: 'https://allwebs.ru/images/2025/12/01/7f8be22d44ad65da2833d4c115cb3ae1.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0612/85/ef5f987cd595a8146e65d211e2a07685.jpg', poster: 'https://i127.fastpic.org/big/2026/0612/8b/7d4e4d191ab476dbb3697ad572a3c78b.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/2796171d2e85e5609cae48e6cd232b3a.jpg', poster: 'https://allwebs.ru/images/2025/12/01/59543c0f86adf1196a9fc852a669bca6.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0825/da/2204f58ee19341fd1bde0133256972da.jpg', poster: 'https://i128.fastpic.org/big/2026/0825/ad/6e1cd298ee1ff850d58a095342515bad.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/ca0ecd83266572fe090d39b8cc621c01.jpg', poster: 'https://allwebs.ru/images/2025/12/02/b8ee10ab37486f5ed6b80feafaf10b57.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0811/bc/1715aa6b757f9d57477f1a69e7bd8abc.jpg', poster: 'https://i128.fastpic.org/big/2026/0811/fc/377ecd9c7f0834b5264c7b476ec79afc.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0520/96/8166762e24a78f47a0bfbf442be08096.jpg', poster: 'https://i127.fastpic.org/big/2026/0520/aa/41c13bca29c13e6c4e04f91b2ef164aa.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/32b6b8f1dc1895d50f922a3a78dcce13.jpg', poster: 'https://allwebs.ru/images/2025/12/01/985c3445b32ae4d2bb3d5d563a7b0241.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/f03a8adb73f507b92abba0e0bea1b76e.jpg', poster: 'https://allwebs.ru/images/2025/12/01/f60470757611c1d4fc8974c4a8797537.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/62c57ece61e3be959e0e6abed456e490.jpg', poster: 'https://allwebs.ru/images/2025/12/01/3cf4ce5418d573ea8fa266e525807445.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0615/de/6de3dc996ddb1c4823ceae8eaead94de.jpg', poster: 'https://i127.fastpic.org/big/2026/0615/6d/986e599ffb8ba1adbaf06cdd4edd296d.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0613/52/6073c118671af6532d5c06506ccdc952.jpg', poster: 'https://i127.fastpic.org/big/2026/0613/78/d709bbdeae0975c8095acdb1c869af78.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0801/3d/fe2db058ed5f9970f6121c7d4b24fa3d.jpg', poster: 'https://i128.fastpic.org/big/2026/0801/63/917734b347c5236b71c60626ae685563.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0620/a3/475db2c00a6ecae454e49f8b792c43a3.jpg', poster: 'https://i127.fastpic.org/big/2026/0620/f1/28e127c7b46f15080af9894683f525f1.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/2a1c7ee366ac75baddc96337dbeb0911.jpg', poster: 'https://allwebs.ru/images/2025/12/01/de95b2dd4e38658b1ef92892cf12110c.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/9bdc39444e702766529790f7e5b6a838.png', poster: 'https://allwebs.ru/images/2025/12/01/92f73abd425840d2add116419b93801d.png', posterWidth: 250 },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/df15dc333879590621755f30520e4359.jpg', poster: 'https://allwebs.ru/images/2025/12/01/9ddc4ace6edf56fff3a68a7198645c7d.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0825/e5/06e137c45ea9c8b6fffe4701786a85e5.jpg', poster: 'https://i128.fastpic.org/big/2026/0825/85/128aa6bc7e1f575041ae05d5dc3c8585.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0507/37/28966b0593b8e40b7734aab4973e9f37.jpg', poster: 'https://i127.fastpic.org/big/2026/0507/9f/a8d8da775045ce1e295adbe3aeb3059f.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/f992128a30d742141b025e1c5c9f23c6.jpg', poster: 'https://i127.fastpic.org/big/2026/0518/0f/c8b92ba8a4acaefff5077309c799070f.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/cf7f22878f8e491d089afaaf719b5870.jpg', poster: 'https://allwebs.ru/images/2025/12/01/f0d246939dff557fda7883b5ff89f3f4.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/cb61448885ab8b1e0a7b8e96e8ad34e1.jpg', poster: 'https://allwebs.ru/images/2025/12/02/4795ac8b7225362a7867d0f534d25b8c.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0828/55/af34c52a9536eb17b74e041ad5a76955.jpg', poster: 'https://i128.fastpic.org/big/2026/0828/67/47630de1d719fc34ba44334e15e33e67.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0603/c2/a8263d1875c76aa0e29f14209679fec2.jpg', poster: 'https://i127.fastpic.org/big/2026/0603/07/c1620c69af4d8048d38b10daac734e07.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0808/18/abe52e22621eda56a447cdbb1cdc4118.jpg', poster: 'https://i128.fastpic.org/big/2026/0808/87/e5d9a4ac5250445429a0a2ac660a4e87.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/f6b9aae88b68f3329601cb6bb1b8943d.jpg', poster: 'https://allwebs.ru/images/2025/12/01/a36fe38f7e140273382e8175c598f6dd.jpg' },
+            { cassette: 'https://i126.fastpic.org/big/2026/0108/0b/39a201d70fe8586c42cb52a56665750b.jpg', poster: 'https://i126.fastpic.org/big/2026/0108/dd/f6a8ce85bf12d4d9dcedb71de7a550dd.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0811/a2/2186b7196096aa8befe0c04433ffc7a2.jpg', poster: 'https://i128.fastpic.org/big/2026/0811/e8/d569e6834f2308c9519e13140a77dae8.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0630/7d/8c6678088fb7f0c8f093d16405e7997d.jpg', poster: 'https://i127.fastpic.org/big/2026/0630/3d/f18e80abab164bb4b3d18a68b9a18c3d.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0819/3c/cb5724576b115840a3366ee03e3f683c.jpg', poster: 'https://i128.fastpic.org/big/2026/0819/c2/d508bb7a71e7a9e5584675e62f89aec2.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0625/87/3dedd41f6a3bc8237039da117ead1e87.jpg', poster: 'https://i127.fastpic.org/big/2026/0625/b9/48ccbf42b154cb9df9fb738d90f8feb9.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0530/b7/b42bbc2e3bb50b8540f13c5350dd79b7.jpg', poster: 'https://i127.fastpic.org/big/2026/0530/cb/eee8ff5788f15c943172f2cf6e77bbcb.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/51c6e9f94d5be5c778b5f5e9b0d70873.jpg', poster: 'https://allwebs.ru/images/2025/12/01/58f4ff443f21600bf92da0fbaf1253de.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/02ea94e15540583b590bb895d36481b6.jpg', poster: 'https://allwebs.ru/images/2025/12/02/7f7923d96761f6cacc8adc01e46c0479.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0219/8f/ddaa912197b29ab9ec6db56fee90748f.jpg', poster: 'https://i127.fastpic.org/big/2026/0219/a3/c4523ac89532635faac4ca784f5575a3.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0216/d7/a45b260e7b4978c2d066c5ec3ec686d7.jpg', poster: 'https://i127.fastpic.org/big/2026/0216/ee/25daf26b256b577922fbcd1db8827bee.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0213/3e/825e7232aee5b50f66112d58da70ac3e.jpg', poster: 'https://i127.fastpic.org/big/2026/0213/c5/e125c5b584a10c60271b73bed5ec98c5.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0424/57/d49befc64bbf147c855ae0826d978e57.jpg', poster: 'https://i127.fastpic.org/big/2026/0424/53/7e8afed6dddb185ba03b04834e185953.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/52ee574b94b823464a787db09340bbe7.jpg', poster: 'https://allwebs.ru/images/2025/12/01/ca013611618ee6408166d04a5a8e1ae9.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/f6278208f8463312f69073a613f4cf0d.jpg', poster: 'https://allwebs.ru/images/2025/12/01/d57c1f3164b6919513c013841c502273.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0219/83/8daef63f0b5e0d4705786c69fafa2183.jpg', poster: 'https://i127.fastpic.org/big/2026/0219/24/2e0450aff3f52d2b6894f86cc354bf24.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/01/c5a5136d2edc6dff559949f7c84fbe6f.jpg', poster: 'https://allwebs.ru/images/2025/12/01/741a0983ffd849d9abcb47c7e6740d15.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/0306b64189cebb6b299731f823a06016.jpg', poster: 'https://allwebs.ru/images/2025/12/02/0d78eb3c6bd87ec798276888938b2afe.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/11/30/cfab4621423846206fc175e2c6d9a9ee.jpg', poster: 'https://allwebs.ru/images/2025/12/02/f20c034e853a2affd03f07491ef98f0b.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/5a3af6385af379661c2c7ff4185b812a.jpg', poster: 'https://allwebs.ru/images/2025/12/02/6f84cecfbcb073123e52b2dc8209d9fd.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/02/610aa1cdf3df48efa2ecf8bdd2b2a9f1.jpg', poster: 'https://allwebs.ru/images/2025/12/02/52bf4e0af5e8c23acbdb2bb78096aa0a.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0811/d3/a2fde499a15f7affcddb5f220f4cd6d3.jpg', poster: 'https://i128.fastpic.org/big/2026/0811/f3/ebf9afb9e73c8328405820efc320f8f3.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0801/17/96c9904cdcfc217e342d6e105332a117.jpg', poster: 'https://i128.fastpic.org/big/2026/0801/75/0cc4a9ab2567fa33681d32a8e9120d75.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0614/ef/0e292c1a08ede4d2123de3f658c785ef.jpg', poster: 'https://i127.fastpic.org/big/2026/0606/d9/3052a50885d2826b0eb036a9dd6229d9.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0601/5b/0d14d3fa3bd123b9f5f9b6a3bbad285b.jpg', poster: 'https://i127.fastpic.org/big/2026/0601/5f/68ec733ff49b9c298ce6838cffe9ee5f.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/12/09/3755667c2e13729d53a3c1f3bd8c76fe.jpg', poster: 'https://allwebs.ru/images/2025/12/09/dca66b6f3ac50bc8f91b05fa1932eaef.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0529/62/4eb2aac6871d28f21a41aac08e7ca162.jpg', poster: 'https://i127.fastpic.org/big/2026/0529/d9/5c15c2c35ef9220eb5d640a37e4735d9.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0811/f7/ebc9303436dbfd9cb97551f2eb7596f7.jpg', poster: 'https://i128.fastpic.org/big/2026/0811/21/4cc1da33a5061bc913e703a949681b21.jpg' },
+            { cassette: 'https://i128.fastpic.org/big/2026/0823/8e/6882275f55448ce73c2a05bf7ba1d18e.jpg', poster: 'https://i128.fastpic.org/big/2026/0823/43/a11f2bf374b8283a154f793dd4deb243.jpg' },
+            { cassette: 'https://i127.fastpic.org/big/2026/0520/8a/a1a63296318f943f08bb9c8cfb3fc18a.jpg', poster: 'https://i127.fastpic.org/big/2026/0520/a1/117109feda345b870825a055b90cbfa1.jpg' },
+            { cassette: 'https://allwebs.ru/images/2025/11/30/f41dbfdc63b64595806c8b3776d89072.jpg', poster: 'https://allwebs.ru/images/2025/12/02/2b87b0125224bb4ff4da1b5e6b20653c.jpg' },
+        ];
+
+        // ========== СОСТОЯНИЕ ==========
+        const state = {
+            audioEnabled: false,
+            audioElements: null,
+            isLightOn: false,
+            allAssetsLoaded: false,
+            currentExpandedPoster: null,
+            isAnimating: false,
+            flickerTimer: null,
+            flickerGeneration: 0,
+            preloadedResources: [],
+            brokenAudioCount: 0,
+        };
+
+        // ========== АУДИО ==========
+        function initAudio() {
+            state.audioElements = {
+                pickSound1: new Audio(AUDIO_URLS.pickSound1),
+                pickSound2: new Audio(AUDIO_URLS.pickSound2),
+                openSounds: AUDIO_URLS.openSounds.map(url => new Audio(url)),
+                backgroundMusic: new Audio(AUDIO_URLS.backgroundMusic),
+                flickerSounds: AUDIO_URLS.flickerSounds.map(url => new Audio(url)),
+                switchSound: new Audio(AUDIO_URLS.switchSound),
+                vhsSounds: AUDIO_URLS.vhsSounds.map(url => new Audio(url)),
+            };
+            state.audioElements.backgroundMusic.loop = true;
+            state.audioElements.backgroundMusic.volume = 0.3;
+        }
+
+        function playRandomPickSound() {
+            if (!state.audioEnabled || !state.audioElements) return;
+            const sound = Math.random() > 0.5
+                ? state.audioElements.pickSound1
+                : state.audioElements.pickSound2;
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
+        }
+
+        // Звук доставания кассеты / разворачивания постера (один звук)
+        function playOpenSound() {
+            if (!state.audioEnabled || !state.audioElements) return;
+            const sounds = state.audioElements.openSounds;
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
+        }
+
+        function playRandomFlickerSound() {
+            if (!state.audioEnabled || !state.audioElements) return;
+            const sounds = state.audioElements.flickerSounds;
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
+        }
+
+        function playSwitchSound() {
+            if (!state.audioEnabled || !state.audioElements) return;
+            state.audioElements.switchSound.currentTime = 0;
+            state.audioElements.switchSound.play().catch(() => {});
+        }
+
+        // Звук звуковой области (случайный из двух)
+        function playRandomVhsSound() {
+            if (!state.audioEnabled || !state.audioElements) return;
+            const sounds = state.audioElements.vhsSounds;
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
+        }
+
+        function tryPlayBackgroundMusic() {
+            const music = state.audioElements && state.audioElements.backgroundMusic;
+            if (!music) return;
+            const promise = music.play();
+            if (!promise || typeof promise.catch !== 'function') return;
+            promise.catch(() => {
+                const handleInteraction = () => music.play().catch(() => {});
+                document.addEventListener('click', handleInteraction, { once: true });
+                document.addEventListener('keydown', handleInteraction, { once: true });
+            });
+        }
+
+        // ========== ПРЕДЗАГРУЗКА ==========
+        function preloadImages() {
+            const baseUrls = [
+                'https://i127.fastpic.org/big/2026/0615/f9/305455d4898d3ee3df879a063d09c9f9.jpg',
+                'https://i126.fastpic.org/big/2026/0115/e9/84e27a11b9786f335d5d8744c6eb1ce9.png',
+                'https://ltdfoto.ru/images/2026/05/06/catModGif.gif',
+                'https://i127.fastpic.org/big/2026/0520/24/9f48aa5698c31345e8c381af8a8df824.png',
+                'https://allwebs.ru/images/2025/11/30/01a96644be52ee9de5ced2f7245088df.png',
+            ];
+
+            const urls = [
+                ...baseUrls,
+                ...cassettes.flatMap(c => [c.cassette, c.poster]),
+            ];
+
+            return new Promise((resolve) => {
+                let loaded = 0;
+                const total = urls.length;
+                if (total === 0) { resolve(); return; }
+
+                urls.forEach(src => {
+                    const img = new Image();
+                    state.preloadedResources.push(img);
+                    const done = () => {
+                        loaded++;
+                        if (loaded === total) resolve();
+                    };
+                    img.onload = done;
+                    img.onerror = done;
+                    img.src = src;
+                });
+            });
+        }
+
+        function preloadAudio() {
+            return new Promise((resolve) => {
+                initAudio();
+                const elements = [
+                    state.audioElements.pickSound1,
+                    state.audioElements.pickSound2,
+                    ...state.audioElements.openSounds,
+                    state.audioElements.backgroundMusic,
+                    state.audioElements.switchSound,
+                    ...state.audioElements.flickerSounds,
+                    ...state.audioElements.vhsSounds,
+                ];
+
+                let loaded = 0;
+                let broken = 0;
+                let settled = false;
+                const total = elements.length;
+
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    state.brokenAudioCount = broken;
+                    if (broken > 0) {
+                        console.warn(`[VHS] Внимание: не загрузилось аудиофайлов: ${broken} из ${total}. Проверьте ссылки (вкладка Network).`);
+                    }
+                    resolve();
+                };
+
+                if (total === 0) { finish(); return; }
+
+                // Страховка: если какая-то ссылка "висит" и не отдаёт ни успех,
+                // ни ошибку — не ждём вечно, а открываем сцену через 25 секунд.
+                setTimeout(() => {
+                    if (!settled) {
+                        console.warn(`[VHS] Таймаут предзагрузки аудио: не дождались ${total - loaded} из ${total} файлов`);
+                    }
+                    finish();
+                }, 25000);
+
+                elements.forEach(audio => {
+                    audio.addEventListener('canplaythrough', () => {
+                        if (settled) return;
+                        loaded++;
+                        if (loaded === total) finish();
+                    }, { once: true });
+
+                    audio.addEventListener('error', () => {
+                        broken++;
+                        console.warn('[VHS] Ошибка загрузки аудио:', audio.src,
+                            '| код MediaError:', audio.error && audio.error.code);
+                        if (settled) return;
+                        loaded++;
+                        if (loaded === total) finish();
+                    }, { once: true });
+
+                    audio.load();
+                });
+            });
+        }
+
+        function enterScene() {
+            if (!state.allAssetsLoaded) return;
+
+            document.getElementById('loadingScreen').style.display = 'none';
+            const scene = document.getElementById('scene');
+            scene.style.display = 'block';
+
+            positionOverlayContainer();
+            state.isLightOn = false;
+            state.audioEnabled = true;
+
+            tryPlayBackgroundMusic();
+            createCassettes();
+            scheduleFlicker();
+        }
+
+        function positionOverlayContainer() {
+            const scene = document.getElementById('scene');
+            const overlay = document.getElementById('overlayContainer');
+            if (!scene || !overlay) return;
+            const rect = scene.getBoundingClientRect();
+            overlay.style.left = rect.left + 'px';
+            overlay.style.top = rect.top + 'px';
+        }
+
+        // ========== СОЗДАНИЕ КАССЕТ ==========
+        function createCassettes() {
+            const container = document.getElementById('container');
+            const fragment = document.createDocumentFragment();
+            const total = Math.min(cassettes.length, GRID.COLS * GRID.ROWS);
+
+            for (let i = 0; i < total; i++) {
+                const row = Math.floor(i / GRID.COLS);
+                const colInRow = i % GRID.COLS;
+                const col = colInRow >= GRID.SKIP_AFTER ? colInRow + 1 : colInRow;
+
+                const cassette = document.createElement('img');
+                cassette.src = cassettes[i].cassette;
+                cassette.className = 'vhs-cassette';
+                cassette.id = `cassette${i + 1}`;
+                cassette.dataset.index = i;
+
+                const poster = document.createElement('img');
+                poster.src = cassettes[i].poster;
+                poster.className = 'vhs-poster';
+                poster.id = `poster${i + 1}`;
+                if (cassettes[i].posterWidth) {
+                    poster.style.width = `${cassettes[i].posterWidth}px`;
+                }
+
+                const left = col * (GRID.CASSETTE_W + GRID.GAP_X) + GRID.GLOBAL_OFFSET_X;
+                let top = row * (GRID.CASSETTE_H + GRID.GAP_Y);
+                if (row === 1) top += GRID.EXTRA_ROW2_OFFSET;
+                if (row === 2) top += GRID.EXTRA_ROW3_OFFSET;
+
+                cassette.style.left = `${left}px`;
+                cassette.style.top = `${top}px`;
+
+                fragment.appendChild(cassette);
+                fragment.appendChild(poster);
+            }
+
+            container.appendChild(fragment);
+
+            container.addEventListener('click', handleContainerClick);
+            container.addEventListener('mouseenter', handleContainerMouseEnter, true);
+            container.addEventListener('mouseleave', handleContainerMouseLeave, true);
+        }
+
+        function handleContainerClick(e) {
+            // Клик по развернутому постеру — сворачиваем его обратно в кассету
+            const poster = e.target.closest('.vhs-poster');
+            if (poster && poster.classList.contains('poster-visible')) {
+                collapseCurrentPoster();
+                return;
+            }
+
+            const cassette = e.target.closest('.vhs-cassette');
+            if (!cassette) return;
+            const index = parseInt(cassette.dataset.index, 10);
+            const posterEl = document.getElementById(`poster${index + 1}`);
+            handleCassetteClick(cassette, posterEl, cassettes[index].posterWidth || LAYOUT.POSTER_DEFAULT_W);
+        }
+
+        function handleContainerMouseEnter(e) {
+            const cassette = e.target.closest('.vhs-cassette');
+            if (!cassette) return;
+            playRandomPickSound();
+            const shift = Math.random() > 0.5 ? 4 : -4;
+            cassette.style.transform = `translateY(${shift}px)`;
+        }
+
+        function handleContainerMouseLeave(e) {
+            const cassette = e.target.closest('.vhs-cassette');
+            if (!cassette) return;
+            cassette.style.transform = 'none';
+        }
+
+        // ========== РАСКРЫТИЕ / СКРЫТИЕ ПОСТЕРА ==========
+        function handleCassetteClick(cassette, poster, posterWidth) {
+            if (state.currentExpandedPoster?.dataset.cassetteId === cassette.id) {
+                collapseCurrentPoster();
+                return;
+            }
+            if (state.currentExpandedPoster) {
+                collapseCurrentPoster(() => expandCassette(cassette, poster, posterWidth));
+                return;
+            }
+            expandCassette(cassette, poster, posterWidth);
+        }
+
+        function expandCassette(cassette, poster, posterWidth) {
+            if (state.isAnimating) return;
+            state.isAnimating = true;
+
+            // Кассета исчезает мгновенно (без фейда)
+            cassette.style.opacity = '0';
+            cassette.style.pointerEvents = 'none';
+
+            const container = document.getElementById('container');
+            const containerRect = container.getBoundingClientRect();
+            const cassetteRect = cassette.getBoundingClientRect();
+            const x = cassetteRect.left - containerRect.left;
+            const y = cassetteRect.top - containerRect.top;
+
+            poster.style.transform = `translate(${x}px, ${y + LAYOUT.EXPAND_OFFSET_Y}px) scale(${LAYOUT.EXPAND_SCALE_START})`;
+            poster.classList.add('poster-visible', 'expanding');
+            poster.dataset.cassetteId = cassette.id;
+            state.currentExpandedPoster = poster;
+
+            playOpenSound();
+
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const centerX = (LAYOUT.EXPAND_CENTER_TARGET_X - posterWidth) / 2;
+                    const posterHeight = posterWidth * LAYOUT.POSTER_ASPECT_RATIO;
+                    const centerY = (LAYOUT.CONTAINER_H - posterHeight) / 2 + LAYOUT.EXPAND_OFFSET_Y;
+                    poster.style.transform = `translate(${centerX}px, ${centerY}px) scale(1)`;
+
+                    setTimeout(() => {
+                        poster.classList.remove('expanding');
+                        state.isAnimating = false;
+                    }, 300);
+                }, 10);
+            });
+        }
+
+        function collapseCurrentPoster(callback) {
+            if (!state.currentExpandedPoster || state.isAnimating) return;
+            state.isAnimating = true;
+            playRandomPickSound();
+
+            const poster = state.currentExpandedPoster;
+            const cassette = document.getElementById(poster.dataset.cassetteId);
+            const container = document.getElementById('container');
+            const containerRect = container.getBoundingClientRect();
+            const cassetteRect = cassette.getBoundingClientRect();
+            const x = cassetteRect.left - containerRect.left;
+            const y = cassetteRect.top - containerRect.top;
+
+            poster.classList.add('expanding');
+            poster.style.transform = `translate(${x}px, ${y + LAYOUT.EXPAND_OFFSET_Y}px) scale(${LAYOUT.EXPAND_SCALE_START})`;
+
+            setTimeout(() => {
+                poster.classList.remove('poster-visible', 'expanding');
+                cassette.style.opacity = '1';
+                cassette.style.pointerEvents = 'auto';
+                state.currentExpandedPoster = null;
+                state.isAnimating = false;
+                if (typeof callback === 'function') callback();
+            }, 300);
+        }
+
+        // ========== ПРОЛИСТЫВАНИЕ КЛАВИШАМИ ==========
+        function getCassetteIndexFromId(cassetteId) {
+            const match = cassetteId.match(/cassette(\d+)/);
+            return match ? parseInt(match[1], 10) - 1 : -1;
+        }
+
+        function switchPoster(direction) {
+            if (!state.currentExpandedPoster || state.isAnimating) return;
+
+            const currentIndex = getCassetteIndexFromId(state.currentExpandedPoster.dataset.cassetteId);
+            if (currentIndex < 0) return;
+
+            const total = cassettes.length;
+            const newIndex = (currentIndex + direction + total) % total;
+
+            const oldCassette = document.getElementById(state.currentExpandedPoster.dataset.cassetteId);
+            state.currentExpandedPoster.classList.remove('poster-visible', 'expanding');
+            state.currentExpandedPoster.style.transform = '';
+            if (oldCassette) {
+                oldCassette.style.opacity = '1';
+                oldCassette.style.pointerEvents = 'auto';
+            }
+
+            const newCassette = document.getElementById(`cassette${newIndex + 1}`);
+            const newPoster = document.getElementById(`poster${newIndex + 1}`);
+            if (!newCassette || !newPoster) return;
+
+            const posterWidth = cassettes[newIndex].posterWidth || LAYOUT.POSTER_DEFAULT_W;
+            expandCassette(newCassette, newPoster, posterWidth);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && state.currentExpandedPoster) {
+                e.preventDefault();
+                collapseCurrentPoster();
+                return;
+            }
+            if (!state.currentExpandedPoster) return;
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                switchPoster(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                switchPoster(1);
+            }
+        });
+
+        // ========== КЛИК ВНЕ ПОСТЕРА ==========
+        document.addEventListener('click', (e) => {
+            const lightSwitch = document.getElementById('lightSwitch');
+            if (lightSwitch && (e.target === lightSwitch || lightSwitch.contains(e.target))) {
+                return;
+            }
+            const soundZone = document.getElementById('vhsSoundZone');
+            if (soundZone && (e.target === soundZone || soundZone.contains(e.target))) {
+                return;
+            }
+            if (!e.target.closest('.vhs-cassette') && !e.target.closest('.vhs-poster') && state.currentExpandedPoster) {
+                collapseCurrentPoster();
+            }
+        });
+
+        // ========== ЗВУКОВАЯ ОБЛАСТЬ ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            const soundZone = document.getElementById('vhsSoundZone');
+            if (soundZone) {
+                soundZone.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playRandomVhsSound();
+                });
+            }
+
+            const ls = document.getElementById('lightSwitch');
+            if (ls) ls.addEventListener('click', toggleLight);
+        });
+
+        // ========== МЕРЦАНИЕ ==========
+        // Эффект мерцания света на JS: в течение заданной длительности сцена
+        // случайно и часто «прыгает» между уровнями яркости. И моменты скачков,
+        // и сами уровни яркости рандомизируются, поэтому каждое мерцание уникально.
+        const FLICKER_DURATION = 1500; // длительность эффекта, мс
+        const FLICKER_MIN_GAP = 40;    // минимальный интервал между скачками, мс
+        const FLICKER_MAX_GAP = 190;   // максимальный интервал между скачками, мс
+        // Уровни яркости, между которыми «прыгает» сцена при мерцании
+        const FLICKER_BRIGHTNESS_LEVELS = [0.5, 0.65, 0.8, 0.95, 1.1, 1.25];
+
+        function startFlickerEffect(duration = FLICKER_DURATION) {
+            const scene = document.getElementById('scene');
+            if (!scene) return;
+
+            // Новый запуск мерцания отменяет предыдущее (защита от наложения)
+            const generation = ++state.flickerGeneration;
+            const startTime = performance.now();
+
+            // Яркость, к которой вернёмся по окончании эффекта
+            const baseBrightness = state.isLightOn ? 1 : 0.15;
+
+            // Отключаем плавный переход, чтобы скачки яркости были резкими
+            scene.style.transition = 'none';
+
+            function step() {
+                // Если параллельно запустилось новое мерцание — выходим
+                if (generation !== state.flickerGeneration) return;
+
+                const elapsed = performance.now() - startTime;
+                if (elapsed >= duration) {
+                    // Эффект завершён — возвращаем исходную яркость и переход
+                    scene.style.filter = `brightness(${baseBrightness})`;
+                    scene.style.transition = '';
+                    return;
+                }
+
+                // Случайный уровень яркости
+                const level = FLICKER_BRIGHTNESS_LEVELS[
+                    Math.floor(Math.random() * FLICKER_BRIGHTNESS_LEVELS.length)
+                ];
+                scene.style.filter = `brightness(${level})`;
+
+                // Случайный интервал до следующего скачка (частое мерцание)
+                const nextDelay = FLICKER_MIN_GAP + Math.random() * (FLICKER_MAX_GAP - FLICKER_MIN_GAP);
+                setTimeout(step, nextDelay);
+            }
+
+            step();
+        }
+
+        function scheduleFlicker() {
+            const delay = 1500 + Math.random() * 3000;
+            state.flickerTimer = setTimeout(() => {
+                if (state.audioEnabled && state.isLightOn && Math.random() < 0.12) {
+                    playRandomFlickerSound();
+                    startFlickerEffect(FLICKER_DURATION);
+                }
+                scheduleFlicker();
+            }, delay);
+        }
+
+        // ========== СВЕТ ==========
+        function toggleLight() {
+            const scene = document.getElementById('scene');
+            const lightSwitch = document.getElementById('lightSwitch');
+            const overlayImage = document.getElementById('overlayImage');
+
+            playSwitchSound();
+
+            if (state.isLightOn) {
+                scene.style.filter = 'brightness(0.15)';
+                lightSwitch.src = LIGHT_SWITCH_SRC.off;
+                overlayImage.style.opacity = '1';
+                state.isLightOn = false;
+            } else {
+                scene.style.filter = 'brightness(1)';
+                lightSwitch.src = LIGHT_SWITCH_SRC.on;
+                overlayImage.style.opacity = '0.5';
+                state.isLightOn = true;
+
+                // Мерцание при включении света
+                playRandomFlickerSound();
+                startFlickerEffect(FLICKER_DURATION);
+            }
+        }
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        async function initialize() {
+            await Promise.all([preloadImages(), preloadAudio()]);
+
+            state.allAssetsLoaded = true;
+            const loadingText = document.getElementById('loadingText');
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingWarn = document.getElementById('loadingWarn');
+
+            loadingText.firstChild.nodeValue = 'ЗАЛЕЗТЬ В ПОГРЕБОК ';
+
+            // Если часть звуков не загрузилась — предупреждаем прямо на экране входа
+            if (state.brokenAudioCount > 0 && loadingWarn) {
+                loadingWarn.hidden = false;
+                loadingWarn.textContent = `⚠ Не загрузилось звуков: ${state.brokenAudioCount}. Скорее всего, истекли временные ссылки на аудио. Обновите ссылки на звуковые файлы.`;
+            }
+
+            loadingText.classList.add('ready');
+            loadingScreen.classList.add('ready');
+
+            loadingScreen.addEventListener('click', enterScene);
+        }
+
+        initialize();
+
+        window.addEventListener('resize', () => {
+            const scene = document.getElementById('scene');
+            if (scene && scene.style.display !== 'none') {
+                positionOverlayContainer();
+            }
+        });
+    </script>
+</body>
+</html>
+```
