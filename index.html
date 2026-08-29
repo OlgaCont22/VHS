@@ -821,6 +821,8 @@
             playSwitchSound();
 
             if (state.isLightOn) {
+                state.flickerGeneration++;
+                scene.style.transition = '';
                 scene.style.filter = 'brightness(0.15)';
                 lightSwitch.src = LIGHT_SWITCH_SRC.off;
                 overlayImage.style.opacity = '1';
