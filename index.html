@@ -247,23 +247,18 @@
         };
         
         const AUDIO_URLS = {
-            // Звуки касания кассеты на полке (случайный из двух)
-            pickSound1: './sounds/pick1.mp3',   // cassetePick1
-            pickSound2: './sounds/pick1.mp3',   // cassetePick2
-            // Звук доставания кассеты / разворачивания постера (один звук)
+            pickSound1: 'https://files.catbox.moe/c0lzmw.mp3',
+            pickSound2: 'https://files.catbox.moe/x3s3c1.mp3',
             openSounds: [
                 'https://files.catbox.moe/ohwhwa.mp3',
             ],
             backgroundMusic: 'https://files.catbox.moe/klcpj0.aac',
-            // Звук выключателя света
             switchSound: 'https://files.catbox.moe/yerd9m.mp3',
-            // Звуки мерцания света (случайный из трёх)
             flickerSounds: [
                 'https://files.catbox.moe/bd3vh8.mp3',
                 'https://files.catbox.moe/ag4p6o.mp3',
                 'https://files.catbox.moe/gdruh6.mp3',
             ],
-            // Звуки звуковой области (случайный из двух)
             vhsSounds: [
                 'https://files.catbox.moe/xjc9nd.mp3',
                 'https://files.catbox.moe/i71e30.mp3',
@@ -395,7 +390,6 @@
             sound.play().catch(() => {});
         }
 
-        // Звук доставания кассеты / разворачивания постера (один звук)
         function playOpenSound() {
             if (!state.audioEnabled || !state.audioElements) return;
             const sounds = state.audioElements.openSounds;
@@ -418,7 +412,6 @@
             state.audioElements.switchSound.play().catch(() => {});
         }
 
-        // Звук звуковой области (случайный из двух)
         function playRandomVhsSound() {
             if (!state.audioEnabled || !state.audioElements) return;
             const sounds = state.audioElements.vhsSounds;
@@ -495,20 +488,12 @@
                     if (settled) return;
                     settled = true;
                     state.brokenAudioCount = broken;
-                    if (broken > 0) {
-                        console.warn(`[VHS] Внимание: не загрузилось аудиофайлов: ${broken} из ${total}. Проверьте ссылки (вкладка Network).`);
-                    }
                     resolve();
                 };
 
                 if (total === 0) { finish(); return; }
 
-                // Страховка: если какая-то ссылка "висит" и не отдаёт ни успех,
-                // ни ошибку — не ждём вечно, а открываем сцену через 25 секунд.
                 setTimeout(() => {
-                    if (!settled) {
-                        console.warn(`[VHS] Таймаут предзагрузки аудио: не дождались ${total - loaded} из ${total} файлов`);
-                    }
                     finish();
                 }, 25000);
 
@@ -521,8 +506,6 @@
 
                     audio.addEventListener('error', () => {
                         broken++;
-                        console.warn('[VHS] Ошибка загрузки аудио:', audio.src,
-                            '| код MediaError:', audio.error && audio.error.code);
                         if (settled) return;
                         loaded++;
                         if (loaded === total) finish();
@@ -603,7 +586,6 @@
         }
 
         function handleContainerClick(e) {
-            // Клик по развернутому постеру — сворачиваем его обратно в кассету
             const poster = e.target.closest('.vhs-poster');
             if (poster && poster.classList.contains('poster-visible')) {
                 collapseCurrentPoster();
@@ -648,7 +630,6 @@
             if (state.isAnimating) return;
             state.isAnimating = true;
 
-            // Кассета исчезает мгновенно (без фейда)
             cassette.style.opacity = '0';
             cassette.style.pointerEvents = 'none';
 
@@ -783,48 +764,37 @@
         });
 
         // ========== МЕРЦАНИЕ ==========
-        // Эффект мерцания света на JS: в течение заданной длительности сцена
-        // случайно и часто «прыгает» между уровнями яркости. И моменты скачков,
-        // и сами уровни яркости рандомизируются, поэтому каждое мерцание уникально.
-        const FLICKER_DURATION = 1500; // длительность эффекта, мс
-        const FLICKER_MIN_GAP = 40;    // минимальный интервал между скачками, мс
-        const FLICKER_MAX_GAP = 190;   // максимальный интервал между скачками, мс
-        // Уровни яркости, между которыми «прыгает» сцена при мерцании
+        const FLICKER_DURATION = 1500;
+        const FLICKER_MIN_GAP = 40;
+        const FLICKER_MAX_GAP = 190;
         const FLICKER_BRIGHTNESS_LEVELS = [0.5, 0.65, 0.8, 0.95, 1.1, 1.25];
 
         function startFlickerEffect(duration = FLICKER_DURATION) {
             const scene = document.getElementById('scene');
             if (!scene) return;
 
-            // Новый запуск мерцания отменяет предыдущее (защита от наложения)
             const generation = ++state.flickerGeneration;
             const startTime = performance.now();
 
-            // Яркость, к которой вернёмся по окончании эффекта
             const baseBrightness = state.isLightOn ? 1 : 0.15;
 
-            // Отключаем плавный переход, чтобы скачки яркости были резкими
             scene.style.transition = 'none';
 
             function step() {
-                // Если параллельно запустилось новое мерцание — выходим
                 if (generation !== state.flickerGeneration) return;
 
                 const elapsed = performance.now() - startTime;
                 if (elapsed >= duration) {
-                    // Эффект завершён — возвращаем исходную яркость и переход
                     scene.style.filter = `brightness(${baseBrightness})`;
                     scene.style.transition = '';
                     return;
                 }
 
-                // Случайный уровень яркости
                 const level = FLICKER_BRIGHTNESS_LEVELS[
                     Math.floor(Math.random() * FLICKER_BRIGHTNESS_LEVELS.length)
                 ];
                 scene.style.filter = `brightness(${level})`;
 
-                // Случайный интервал до следующего скачка (частое мерцание)
                 const nextDelay = FLICKER_MIN_GAP + Math.random() * (FLICKER_MAX_GAP - FLICKER_MIN_GAP);
                 setTimeout(step, nextDelay);
             }
@@ -862,7 +832,6 @@
                 overlayImage.style.opacity = '0.5';
                 state.isLightOn = true;
 
-                // Мерцание при включении света
                 playRandomFlickerSound();
                 startFlickerEffect(FLICKER_DURATION);
             }
@@ -875,15 +844,8 @@
             state.allAssetsLoaded = true;
             const loadingText = document.getElementById('loadingText');
             const loadingScreen = document.getElementById('loadingScreen');
-            const loadingWarn = document.getElementById('loadingWarn');
 
             loadingText.firstChild.nodeValue = 'ЗАЛЕЗТЬ В ПОГРЕБОК ';
-
-            // Если часть звуков не загрузилась — предупреждаем прямо на экране входа
-            if (state.brokenAudioCount > 0 && loadingWarn) {
-                loadingWarn.hidden = false;
-                loadingWarn.textContent = `⚠ Не загрузилось звуков: ${state.brokenAudioCount}. Скорее всего, истекли временные ссылки на аудио. Обновите ссылки на звуковые файлы.`;
-            }
 
             loadingText.classList.add('ready');
             loadingScreen.classList.add('ready');
