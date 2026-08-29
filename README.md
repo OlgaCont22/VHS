@@ -1,2 +1,0 @@
-# VHS
-Old VHS store
