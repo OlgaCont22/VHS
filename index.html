@@ -418,6 +418,48 @@
             sound.currentTime = 0;
             sound.play().catch(() => {});
         }
+        // Мгновенно останавливает все звуки мерцания (пауза + сброс позиции).
+        
+        // Вызывается при выключении света, чтобы звук мерцания не доигрывал.
+        
+        function stopFlickerSounds() {
+           
+            if (!state.audioElements) return;
+          
+            state.audioElements.flickerSounds.forEach(sound => {
+ 
+            sound.pause();
+ 
+            sound.currentTime = 0;
+ });
+       
+        }
+
+   function playSwitchSound() {
+   
+            if (!state.audioEnabled || !state.audioElements) return;
+   
+            state.audioElements.switchSound.currentTime = 0;
+       
+            state.audioElements.switchSound.play().catch(() => {});
+      
+        }
+
+   function playRandomVhsSound() {
+  
+            if (!state.audioEnabled || !state.audioElements) return;
+ 
+            const sounds = state.audioElements.vhsSounds;
+  
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+  
+            sound.currentTime = 0;
+        
+            sound.play().catch(() => {});
+      
+        }
+
+        
 
         function tryPlayBackgroundMusic() {
             const music = state.audioElements && state.audioElements.backgroundMusic;
@@ -822,6 +864,7 @@
 
             if (state.isLightOn) {
                 state.flickerGeneration++;
+                stopFlickerSounds();
                 scene.style.transition = '';
                 scene.style.filter = 'brightness(0.15)';
                 lightSwitch.src = LIGHT_SWITCH_SRC.off;
