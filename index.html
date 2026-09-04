@@ -1,5 +1,19 @@
-```html
-<!DOCTYPE html>
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -114,6 +128,28 @@
         
         .vhs-poster.expanding {
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        /* ========== ОКОШКО С ОПИСАНИЕМ ФИЛЬМА ========== */
+        .poster-desc {
+            position: absolute;
+            z-index: 25;
+            max-width: 320px;
+            background: rgba(22, 19, 16, 0.93);
+            border: 1px solid rgba(255, 214, 140, 0.28);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: #f0e8d8;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            line-height: 1.45;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .poster-desc.visible {
+            opacity: 1;
         }
         
         .light-switch {
@@ -273,86 +309,93 @@
         };
 
         // ========== ДАННЫЕ ==========
+        // В поле desc впишите своё описание фильма — оно появится в окошке,
+        // если задержать курсор на развёрнутом постере на 2 секунды.
+        // Пока desc пустой (''), окошко для кассеты не показывается.
         const cassettes = [
-            { cassette: './images/amers_VHS.jpg', poster: './images/amers_cover.jpg' },
-            { cassette: './images/wervolf_VHS.jpg', poster: './images/wervolf_cover.jpg' },
-            { cassette: './images/we_VHS.jpg', poster: './images/we_cover.jpg' },
-            { cassette: './images/stalk_vhs.jpg', poster: './images/stalk_poster.jpg' },
-            { cassette: './images/machete_vhs.jpg', poster: './images/machete_poster.jpg' },
-            { cassette: './images/bezdna_vhs.jpg', poster: './images/bezdna_poster.jpg' },
-            { cassette: './images/longlegs_vhs.jpg', poster: './images/longlegs_poster.jpg' },
-            { cassette: './images/13sins_vhs.jpg', poster: './images/13sins_poster.jpg' },
-            { cassette: './images/metod_vhs.jpg', poster: './images/metod_poster.jpg' },
-            { cassette: './images/passenger_vhs.jpg', poster: './images/passenger_poster.jpg' },
-            { cassette: './images/fargo_vhs.jpg', poster: './images/fargo_poster.jpg' },
-            { cassette: './images/berk_vhs.jpg', poster: './images/berk_poster.jpg' },
-            { cassette: './images/itfollow_vhs.jpg', poster: './images/itfollow_poster.jpg' },
-            { cassette: './images/claust_vhs.jpg', poster: './images/claust_poster.jpg' },
-            { cassette: './images/ruslan_vhs.jpg', poster: './images/ruslan_poster.jpg' },
-            { cassette: './images/body_vhs.jpg', poster: './images/body_poster.jpg' },
-            { cassette: './images/rabbit_vhs.jpg', poster: './images/rabbit_poster.jpg' },
-            { cassette: './images/colombo_vhs.jpg', poster: './images/colombo_poster.jpg' },
-            { cassette: './images/porn_vhs.jpg', poster: './images/porn_poster.jpg' },
-            { cassette: './images/day_vhs.jpg', poster: './images/day_poster.jpg' },
-            { cassette: './images/dead_vhs.jpg', poster: './images/dead_poster.jpg' },
-            { cassette: './images/hunger_vhs.jpg', poster: './images/hunger_poster.jpg' },
-            { cassette: './images/repl_vhs.jpg', poster: './images/repl_poster.jpg' },
-            { cassette: './images/dark_vhs.jpg', poster: './images/dark_poster.jpg' },
-            { cassette: './images/fear_vhs.jpg', poster: './images/fear_poster.jpg' },
-            { cassette: './images/astral_vhs.jpg', poster: './images/astral_poster.jpg' },
-            { cassette: './images/kings_vhs.jpg', poster: './images/kings_poster.jpg' },
-            { cassette: './images/soul_vhs.jpg', poster: './images/soul_poster.jpg' },
-            { cassette: './images/hour_vhs.jpg', poster: './images/hour_poster.jpg' },
-            { cassette: './images/moana_vhs.jpg', poster: './images/moana_poster.jpg' },
-            { cassette: './images/more_vhs.jpg', poster: './images/more_poster.jpg' },
-            { cassette: './images/delo_vhs.jpg', poster: './images/delo_poster.jpg' },
-            { cassette: './images/usual_vhs.jpg', poster: './images/usual_poster.jpg' },
-            { cassette: './images/spider_vhs.jpg', poster: './images/spider_poster.jpg' },
-            { cassette: './images/lost_vhs.jpg', poster: './images/lost_poster.jpg' },
-            { cassette: './images/caveat_vhs.jpg', poster: './images/caveat_poster.jpg' },
-            { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg' },
-            { cassette: './images/unnamed_vhs.png', poster: './images/unnamed_poster.png', posterWidth: 250 },
-            { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg' },
-            { cassette: './images/pin_vhs.jpg', poster: './images/pin_poster.jpg' },
-            { cassette: './images/hokum_vhs.jpg', poster: './images/hokum_poster.jpg' },
-            { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg' },
-            { cassette: './images/eden_vhs.jpg', poster: './images/eden_poster.jpg' },
-            { cassette: './images/milk_vhs.jpg', poster: './images/milk_poster.jpg' },
-            { cassette: './images/cronos_vhs.jpg', poster: './images/cronos_poster.jpg' },
-            { cassette: './images/wisp_vhs.JPG', poster: './images/wisp_poster.jpg' },
-            { cassette: './images/better_vhs.jpg', poster: './images/better_poster.jpg' },
-            { cassette: './images/battle_vhs.jpg', poster: './images/battle_poster.jpg' },
-            { cassette: './images/ash_vhs.jpg', poster: './images/ash_poster.jpg' },
-            { cassette: './images/holod_vhs.jpg', poster: './images/holod_poster.jpg' },
-            { cassette: './images/witch_vhs.jpg', poster: './images/witch_poster.jpg' },
-            { cassette: './images/mir_vhs.jpg', poster: './images/mir_poster.jpg' },
-            { cassette: './images/mesa_vhs.jpg', poster: './images/mesa_poster.jpg' },
-            { cassette: './images/time_vhs.jpg', poster: './images/time_poster.jpg' },
-            { cassette: './images/london_vhs.jpg', poster: './images/london_poster.jpg' },
-            { cassette: './images/roof_vhs.jpg', poster: './images/roof_poster.jpg' },
-            { cassette: './images/maid_vhs.jpg', poster: './images/maid_poster.jpg' },
-            { cassette: './images/kiber_vhs.jpg', poster: './images/kiber_poster.jpg' },
-            { cassette: './images/master_vhs.jpg', poster: './images/master_poster.jpg' },
-            { cassette: './images/vamp_vhs.jpg', poster: './images/vamp_poster.jpg' },
-            { cassette: './images/level_vhs.jpg', poster: './images/level_poster.jpg' },
-            { cassette: './images/curse_vhs.jpg', poster: './images/curse_poster.jpg' },
-            { cassette: './images/ohota_vhs.jpg', poster: './images/ohota_poster.jpg' },
-            { cassette: './images/stone_vhs.JPG', poster: './images/stone_poster.JPG' },
-            { cassette: './images/woman_vhs.jpg', poster: './images/woman_poster.jpg' },
-            { cassette: './images/zavod_vhs.jpg', poster: './images/zavod_poter.jpg' },
-            { cassette: './images/hilton_vhs.jpg', poster: './images/hilton_poster.jpg' },
-            { cassette: './images/derry_vhs.jpg', poster: './images/derry_poster.jpg' },
-            { cassette: './images/app_vhs.jpg', poster: './images/app_poster.jpg' },
-            { cassette: './images/lake_vhs.jpg', poster: './images/lake_poster.jpg' },
-            { cassette: './images/phone_vhs.jpg', poster: './images/phone_poster.jpg' },
-            { cassette: './images/tapes_vhs.jpg', poster: './images/tapes_poster.jpg' },
-            { cassette: './images/assault_vhs.jpg', poster: './images/assault_poster.jpg' },
-            { cassette: './images/fort_vhs.jpg', poster: './images/fort_poster.jpg' },
-            { cassette: './images/topi_vhs.jpg', poster: './images/topi_poster.jpg' },
-            { cassette: './images/shark_vhs.jpg', poster: './images/shark_poster.jpg' },
-            { cassette: './images/grimm_vhs.jpg', poster: './images/grimm_poster.jpg' },
-            { cassette: './images/balkan_vhs.jpg', poster: './images/balkan_poster.jpg' },
+            { cassette: './images/amers_VHS.jpg', poster: './images/amers_cover.jpg', desc: '' },
+            { cassette: './images/wervolf_VHS.jpg', poster: './images/wervolf_cover.jpg', desc: '' },
+            { cassette: './images/we_VHS.jpg', poster: './images/we_cover.jpg', desc: '' },
+            { cassette: './images/stalk_vhs.jpg', poster: './images/stalk_poster.jpg', desc: '' },
+            { cassette: './images/machete_vhs.jpg', poster: './images/machete_poster.jpg', desc: '' },
+            { cassette: './images/bezdna_vhs.jpg', poster: './images/bezdna_poster.jpg', desc: '' },
+            { cassette: './images/longlegs_vhs.jpg', poster: './images/longlegs_poster.jpg', desc: '' },
+            { cassette: './images/13sins_vhs.jpg', poster: './images/13sins_poster.jpg', desc: '' },
+            { cassette: './images/metod_vhs.jpg', poster: './images/metod_poster.jpg', desc: '' },
+            { cassette: './images/passenger_vhs.jpg', poster: './images/passenger_poster.jpg', desc: '' },
+            { cassette: './images/fargo_vhs.jpg', poster: './images/fargo_poster.jpg', desc: '' },
+            { cassette: './images/berk_vhs.jpg', poster: './images/berk_poster.jpg', desc: '' },
+            { cassette: './images/itfollow_vhs.jpg', poster: './images/itfollow_poster.jpg', desc: '' },
+            { cassette: './images/claust_vhs.jpg', poster: './images/claust_poster.jpg', desc: '' },
+            { cassette: './images/ruslan_vhs.jpg', poster: './images/ruslan_poster.jpg', desc: '' },
+            { cassette: './images/body_vhs.jpg', poster: './images/body_poster.jpg', desc: '' },
+            { cassette: './images/rabbit_vhs.jpg', poster: './images/rabbit_poster.jpg', desc: '' },
+            { cassette: './images/colombo_vhs.jpg', poster: './images/colombo_poster.jpg', desc: '' },
+            { cassette: './images/porn_vhs.jpg', poster: './images/porn_poster.jpg', desc: '' },
+            { cassette: './images/day_vhs.jpg', poster: './images/day_poster.jpg', desc: '' },
+            { cassette: './images/dead_vhs.jpg', poster: './images/dead_poster.jpg', desc: '' },
+            { cassette: './images/hunger_vhs.jpg', poster: './images/hunger_poster.jpg', desc: '' },
+            { cassette: './images/repl_vhs.jpg', poster: './images/repl_poster.jpg', desc: '' },
+            { cassette: './images/dark_vhs.jpg', poster: './images/dark_poster.jpg', desc: '' },
+            { cassette: './images/fear_vhs.jpg', poster: './images/fear_poster.jpg', desc: '' },
+            { cassette: './images/astral_vhs.jpg', poster: './images/astral_poster.jpg', desc: '' },
+            { cassette: './images/kings_vhs.jpg', poster: './images/kings_poster.jpg', desc: '' },
+            { cassette: './images/soul_vhs.jpg', poster: './images/soul_poster.jpg', desc: '' },
+            { cassette: './images/hour_vhs.jpg', poster: './images/hour_poster.jpg', desc: '' },
+            { cassette: './images/moana_vhs.jpg', poster: './images/moana_poster.jpg', desc: '' },
+            { cassette: './images/more_vhs.jpg', poster: './images/more_poster.jpg', desc: '' },
+            { cassette: './images/delo_vhs.jpg', poster: './images/delo_poster.jpg', desc: '' },
+            { cassette: './images/usual_vhs.jpg', poster: './images/usual_poster.jpg', desc: '' },
+            { cassette: './images/spider_vhs.jpg', poster: './images/spider_poster.jpg', desc: '' },
+            { cassette: './images/lost_vhs.jpg', poster: './images/lost_poster.jpg', desc: '' },
+            { cassette: './images/caveat_vhs.jpg', poster: './images/caveat_poster.jpg', desc: '' },
+            { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '' },
+            { cassette: './images/unnamed_vhs.png', poster: './images/unnamed_poster.png', posterWidth: 250, desc: '' },
+            { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg', desc: '' },
+            { cassette: './images/pin_vhs.jpg', poster: './images/pin_poster.jpg', desc: '' },
+            { cassette: './images/hokum_vhs.jpg', poster: './images/hokum_poster.jpg', desc: '' },
+            { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg', desc: '' },
+            { cassette: './images/eden_vhs.jpg', poster: './images/eden_poster.jpg', desc: '' },
+            { cassette: './images/milk_vhs.jpg', poster: './images/milk_poster.jpg', desc: '' },
+            { cassette: './images/cronos_vhs.jpg', poster: './images/cronos_poster.jpg', desc: '' },
+            { cassette: './images/wisp_vhs.JPG', poster: './images/wisp_poster.jpg', desc: '' },
+            { cassette: './images/better_vhs.jpg', poster: './images/better_poster.jpg', desc: '' },
+            { cassette: './images/battle_vhs.jpg', poster: './images/battle_poster.jpg', desc: '' },
+            { cassette: './images/ash_vhs.jpg', poster: './images/ash_poster.jpg', desc: '' },
+            { cassette: './images/holod_vhs.jpg', poster: './images/holod_poster.jpg', desc: '' },
+            { cassette: './images/witch_vhs.jpg', poster: './images/witch_poster.jpg', desc: '' },
+            { cassette: './images/mir_vhs.jpg', poster: './images/mir_poster.jpg', desc: '' },
+            { cassette: './images/mesa_vhs.jpg', poster: './images/mesa_poster.jpg', desc: '' },
+            { cassette: './images/time_vhs.jpg', poster: './images/time_poster.jpg', desc: '' },
+            { cassette: './images/london_vhs.jpg', poster: './images/london_poster.jpg', desc: '' },
+            { cassette: './images/roof_vhs.jpg', poster: './images/roof_poster.jpg', desc: '' },
+            { cassette: './images/maid_vhs.jpg', poster: './images/maid_poster.jpg', desc: '' },
+            { cassette: './images/kiber_vhs.jpg', poster: './images/kiber_poster.jpg', desc: '' },
+            { cassette: './images/master_vhs.jpg', poster: './images/master_poster.jpg', desc: '' },
+            { cassette: './images/vamp_vhs.jpg', poster: './images/vamp_poster.jpg', desc: '' },
+            { cassette: './images/level_vhs.jpg', poster: './images/level_poster.jpg', desc: '' },
+            { cassette: './images/curse_vhs.jpg', poster: './images/curse_poster.jpg', desc: '' },
+            { cassette: './images/ohota_vhs.jpg', poster: './images/ohota_poster.jpg', desc: '' },
+            { cassette: './images/stone_vhs.JPG', poster: './images/stone_poster.JPG', desc: '' },
+            { cassette: './images/woman_vhs.jpg', poster: './images/woman_poster.jpg', desc: '' },
+            { cassette: './images/zavod_vhs.jpg', poster: './images/zavod_poter.jpg', desc: '' },
+            { cassette: './images/hilton_vhs.jpg', poster: './images/hilton_poster.jpg', desc: '' },
+            { cassette: './images/derry_vhs.jpg', poster: './images/derry_poster.jpg', desc: '' },
+            { cassette: './images/app_vhs.jpg', poster: './images/app_poster.jpg', desc: '' },
+            { cassette: './images/lake_vhs.jpg', poster: './images/lake_poster.jpg', desc: '' },
+            { cassette: './images/phone_vhs.jpg', poster: './images/phone_poster.jpg', desc: '' },
+            { cassette: './images/tapes_vhs.jpg', poster: './images/tapes_poster.jpg', desc: '' },
+            { cassette: './images/assault_vhs.jpg', poster: './images/assault_poster.jpg', desc: '' },
+            { cassette: './images/fort_vhs.jpg', poster: './images/fort_poster.jpg', desc: '' },
+            { cassette: './images/topi_vhs.jpg', poster: './images/topi_poster.jpg', desc: '' },
+            { cassette: './images/shark_vhs.jpg', poster: './images/shark_poster.jpg', desc: '' },
+            { cassette: './images/grimm_vhs.jpg', poster: './images/grimm_poster.jpg', desc: '' },
+            { cassette: './images/balkan_vhs.jpg', poster: './images/balkan_poster.jpg', desc: '' },
         ];
+
+        // Задержка перед показом описания при наведении на постер, мс
+        const DESC_DELAY = 2000;
+        let descTimer = null;
 
         // ========== СОСТОЯНИЕ ==========
         const state = {
@@ -421,48 +464,14 @@
             sound.currentTime = 0;
             sound.play().catch(() => {});
         }
-        // Мгновенно останавливает все звуки мерцания (пауза + сброс позиции).
-        
-        // Вызывается при выключении света, чтобы звук мерцания не доигрывал.
-        
+
         function stopFlickerSounds() {
-           
             if (!state.audioElements) return;
-          
             state.audioElements.flickerSounds.forEach(sound => {
- 
-            sound.pause();
- 
-            sound.currentTime = 0;
- });
-       
+                sound.pause();
+                sound.currentTime = 0;
+            });
         }
-
-   function playSwitchSound() {
-   
-            if (!state.audioEnabled || !state.audioElements) return;
-   
-            state.audioElements.switchSound.currentTime = 0;
-       
-            state.audioElements.switchSound.play().catch(() => {});
-      
-        }
-
-   function playRandomVhsSound() {
-  
-            if (!state.audioEnabled || !state.audioElements) return;
- 
-            const sounds = state.audioElements.vhsSounds;
-  
-            const sound = sounds[Math.floor(Math.random() * sounds.length)];
-  
-            sound.currentTime = 0;
-        
-            sound.play().catch(() => {});
-      
-        }
-
-        
 
         function tryPlayBackgroundMusic() {
             const music = state.audioElements && state.audioElements.backgroundMusic;
@@ -474,6 +483,53 @@
                 document.addEventListener('click', handleInteraction, { once: true });
                 document.addEventListener('keydown', handleInteraction, { once: true });
             });
+        }
+
+        // ========== ОПИСАНИЕ ФИЛЬМА ==========
+        function getDescElement() {
+            let el = document.getElementById('posterDesc');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'posterDesc';
+                el.className = 'poster-desc';
+                document.getElementById('container').appendChild(el);
+            }
+            return el;
+        }
+
+        function hidePosterDesc() {
+            if (descTimer) { clearTimeout(descTimer); descTimer = null; }
+            const el = document.getElementById('posterDesc');
+            if (el) el.classList.remove('visible');
+        }
+
+        function showPosterDesc(poster, index) {
+            const data = cassettes[index];
+            const text = data ? (data.desc || '') : '';
+            if (!text) return; // нет описания — окошко не показываем
+
+            const container = document.getElementById('container');
+            const el = getDescElement();
+            el.textContent = text;
+
+            const containerRect = container.getBoundingClientRect();
+            const posterRect = poster.getBoundingClientRect();
+            const descW = el.offsetWidth;
+            const descH = el.offsetHeight;
+
+            // Справа от постера; если не влезает — слева
+            let left = (posterRect.right - containerRect.left) + 14;
+            if (left + descW > containerRect.width - 8) {
+                left = (posterRect.left - containerRect.left) - descW - 14;
+            }
+            if (left < 8) left = 8;
+
+            let top = posterRect.top - containerRect.top;
+            top = Math.max(8, Math.min(top, containerRect.height - descH - 8));
+
+            el.style.left = left + 'px';
+            el.style.top = top + 'px';
+            el.classList.add('visible');
         }
 
         // ========== ПРЕДЗАГРУЗКА ==========
@@ -610,6 +666,16 @@
                     poster.style.width = `${cassettes[i].posterWidth}px`;
                 }
 
+                // Показ описания при удержании курсора на развёрнутом постере
+                poster.addEventListener('mouseenter', () => {
+                    if (state.currentExpandedPoster !== poster) return;
+                    if (descTimer) clearTimeout(descTimer);
+                    descTimer = setTimeout(() => showPosterDesc(poster, i), DESC_DELAY);
+                });
+                poster.addEventListener('mouseleave', () => {
+                    hidePosterDesc();
+                });
+
                 const left = col * (GRID.CASSETTE_W + GRID.GAP_X) + GRID.GLOBAL_OFFSET_X;
                 let top = row * (GRID.CASSETTE_H + GRID.GAP_Y);
                 if (row === 1) top += GRID.EXTRA_ROW2_OFFSET;
@@ -708,6 +774,7 @@
         function collapseCurrentPoster(callback) {
             if (!state.currentExpandedPoster || state.isAnimating) return;
             state.isAnimating = true;
+            hidePosterDesc();
             playRandomPickSound();
 
             const poster = state.currentExpandedPoster;
@@ -739,6 +806,7 @@
 
         function switchPoster(direction) {
             if (!state.currentExpandedPoster || state.isAnimating) return;
+            hidePosterDesc();
 
             const currentIndex = getCassetteIndexFromId(state.currentExpandedPoster.dataset.cassetteId);
             if (currentIndex < 0) return;
@@ -911,4 +979,13 @@
     </script>
 </body>
 </html>
-```
+
+
+              <script>
+                                { cassette: './images/amers_VHS.jpg', poster: './images/amers_cover.jpg', desc: 'Американский психопат... ваше описание.' },
+  
+
+              </script>
+                        </body>
+                        </html>
+                    
