@@ -1,18 +1,16 @@
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-               body {
-                  background-color: white; /* Ensure the iframe has a white background */
-                }
-
-                
-              </style>
-                        </head>
-                        <body>
-                            <!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -106,6 +104,15 @@
             cursor: pointer;
             transition: transform 0.2s ease;
             z-index: 10;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
         
         .vhs-poster {
@@ -119,6 +126,15 @@
             display: none;
             transform-origin: top left;
             will-change: transform;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
         
         .vhs-poster.poster-visible {
@@ -146,6 +162,10 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         .poster-desc.visible {
             opacity: 1;
@@ -160,6 +180,15 @@
             cursor: pointer;
             z-index: 30;
             object-fit: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
         
         /* ========== ЗВУКОВАЯ ОБЛАСТЬ (полностью невидимая) ========== */
@@ -194,6 +223,10 @@
             margin-bottom: 20px;
             max-width: 200px;
             height: auto;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         #loadingText {
@@ -203,6 +236,10 @@
             text-align: center;
             pointer-events: none;
             transition: color 0.3s ease;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         #loadingText.ready {
@@ -218,6 +255,10 @@
             text-align: center;
             max-width: 640px;
             pointer-events: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         #loadingScreen.ready {
@@ -308,9 +349,6 @@
         };
 
         // ========== ДАННЫЕ ==========
-        // В поле desc впишите своё описание фильма — оно появится в окошке,
-        // если задержать курсор на развёрнутом постере на 2 секунды.
-        // Пока desc пустой (''), окошко для кассеты не показывается.
         const cassettes = [
             { cassette: './images/wervolf_VHS.jpg', poster: './images/wervolf_cover.jpg', desc: '1997. УЖАСЫ, КОМЕДИЯ. Трое парней путешествуют по Европе в поисках приключений. Они находят их в Париже, когда однажды ночью предотвращают самоубийство молодой девушки.' },
             { cassette: './images/stalk_vhs.jpg', poster: './images/stalk_poster.jpg', desc: '2023. ТРИЛЛЕР, БОЕВИК, КРИМИНАЛ. В сельской местности штата Орегон девушка спасается бегством от разъярённого мужчины с ружьём.' },
@@ -338,7 +376,7 @@
             { cassette: './images/hour_vhs.jpg', poster: './images/hour_poster.jpg', desc: '2003. ФАНТАСТИКА, БОЕВИК, ТРИЛЛЕР. Айтишник раскрывает тайны корпорации, которая стерла ему память.' },
             { cassette: './images/more_vhs.jpg', poster: './images/more_poster.jpg', desc: '2021. ДРАМА. Влюблённые подростки, сбежавшие от всех в заброшенный домик посреди глухого леса, пытаются разобраться в своих хрупких чувствах и ночных кошмарах о всемирном потопе.' },
             { cassette: './images/caveat_vhs.jpg', poster: './images/caveat_poster.jpg', desc: '2020. УЖАСЫ. Мужчина соглашается за деньги приглядеть за психически нестабильной Ольгой в заброшенном доме на уединённом острове, но по условиям договора даёт приковать себя длинной цепью.' },
-            { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '2026. БОЕВИК, ФАНТАСТИКА, ТРИЛЛЕР. Кошка сражется с полчищами зомби, пытаясь доставить выжившим людям экспериментальную вакцину от зомби-вируса.' },
+            { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '2026. БОЕВИК, ФАНТАСТИКА, ТРИЛЛЕР. Кошка сражается с полчищами зомби, пытаясь доставить выжившим людям экспериментальную вакцину от зомби-вируса.' },
             { cassette: './images/unnamed_vhs.png', poster: './images/unnamed_poster.png', posterWidth: 250, desc: 'Старая кассета без обложки с написанным на ней предупреждением.' },
             { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg', desc: '2025. УЖАСЫ. Экзорцисты помогают семье, которую преследует сущность из зеркал.' },
             { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg', desc: '1993. ФАНТАСТИКА, ДЕТЕКТИВ, УЖАСЫ. Агенты ФБР сталкиваются со всяким сверхъестественным и не очень.' },
@@ -372,7 +410,6 @@
             { cassette: './images/balkan_vhs.jpg', poster: './images/balkan_poster.jpg', desc: '2019. БОЕВИК, ВОЕННЫЙ, ДРАМА. Российская спецгруппа получает секретный приказ захватить и удерживать до прихода миротворцев стратегически важный аэродром Слатина в Косово, вступая в неравный и жестокий бой с албанскими боевиками.' },
         ];
 
-        // Задержка перед показом описания при наведении на постер, мс
         const DESC_DELAY = 500;
         let descTimer = null;
 
@@ -485,7 +522,7 @@
         function showPosterDesc(poster, index) {
             const data = cassettes[index];
             const text = data ? (data.desc || '') : '';
-            if (!text) return; // нет описания — окошко не показываем
+            if (!text) return;
 
             const container = document.getElementById('container');
             const el = getDescElement();
@@ -496,7 +533,6 @@
             const descW = el.offsetWidth;
             const descH = el.offsetHeight;
 
-            // Справа от постера; если не влезает — слева
             let left = (posterRect.right - containerRect.left) + 14;
             if (left + descW > containerRect.width - 8) {
                 left = (posterRect.left - containerRect.left) - descW - 14;
@@ -636,16 +672,19 @@
                 cassette.className = 'vhs-cassette';
                 cassette.id = `cassette${i + 1}`;
                 cassette.dataset.index = i;
+                cassette.draggable = false; // Отключаем перетаскивание
+                cassette.setAttribute('draggable', 'false');
 
                 const poster = document.createElement('img');
                 poster.src = cassettes[i].poster;
                 poster.className = 'vhs-poster';
                 poster.id = `poster${i + 1}`;
+                poster.draggable = false; // Отключаем перетаскивание
+                poster.setAttribute('draggable', 'false');
                 if (cassettes[i].posterWidth) {
                     poster.style.width = `${cassettes[i].posterWidth}px`;
                 }
 
-                // Показ описания при удержании курсора на развёрнутом постере
                 poster.addEventListener('mouseenter', () => {
                     if (state.currentExpandedPoster !== poster) return;
                     if (descTimer) clearTimeout(descTimer);
@@ -958,12 +997,5 @@
     </script>
 </body>
 </html>
-
-
-              <script>
-                                { cassette: './images/amers_VHS.jpg', poster: './images/amers_cover.jpg', desc: 'Американский психопат... ваше описание.' },
-  
-
-              </script>
-                        </body>
-                        </html>
+</body>
+</html>
