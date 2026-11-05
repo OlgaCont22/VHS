@@ -1,16 +1,4 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            background-color: white;
-        }
-    </style>
-</head>
-<body>
-    <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -141,6 +129,16 @@
             display: block;
         }
         
+        /* VHS-помехи поверх постера: холст того же размера и положения,
+           что и постер; виден только пока идут помехи */
+        #vhsGlitch {
+            position: absolute;
+            z-index: 21;
+            display: none;
+            pointer-events: none;
+            transform-origin: top left;
+        }
+
         .vhs-poster.expanding {
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
@@ -191,6 +189,140 @@
             user-drag: none;
         }
         
+        /* ========== ПЫЛЬ ========== */
+        /* Холсты внутри .scene — яркость и мерцание света действуют и на пыль.
+           #dust — над кассетами, под постером; #posterDust — над постером,
+           под окошком с описанием. */
+        #dust,
+        #spider,
+        #posterDust {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--container-w);
+            height: var(--container-h);
+            pointer-events: none;
+        }
+        #dust { z-index: 12; }
+        #spider { z-index: 13; }   /* над полками и пылью, под постером */
+
+        /* ========== ГЛАЗА КОШКИ В ТЕМНОТЕ ========== */
+        /* Лежат в .overlay-container (вне .scene), чтобы затемнение сцены
+           их не гасило — в темноте они по-настоящему светятся. */
+        #catEyes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--container-w);
+            height: var(--container-h);
+            pointer-events: none;
+            visibility: hidden;
+            --glow: 0;    /* яркость свечения 0..1 (задаётся из JS) */
+            --slit: 40%;  /* ширина зрачка относительно глаза */
+            --lx: 0;      /* направление взгляда -1..1 */
+            --ly: 0;
+        }
+        .cat-eyes-pair { position: absolute; width: 0; height: 0; }
+
+        /* ========== КОШАЧЬЯ ЛАПА ========== */
+        /* Рядом с глазами в .overlay-container — видна в темноте */
+        #catPaw {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--container-w);
+            height: var(--container-h);
+            pointer-events: none;
+        }
+
+        /* ========== СВЕТ ИЗ ЩЕЛЕЙ В ПОТОЛКЕ ========== */
+        /* В .overlay-container, чтобы в темноте лучи действительно светились */
+        #ceilingLight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--container-w);
+            height: var(--container-h);
+            pointer-events: none;
+        }
+
+        /* ========== СВЕЧЕНИЕ ВИДЕОМАГНИТОФОНА ========== */
+        /* Тоже в .overlay-container: огоньки видика мягко подсвечивают полку
+           в темноте. Яркость при свете/темноте — из JS. */
+        #vcrGlow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--container-w);
+            height: var(--container-h);
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+        .vcr-glow {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.65;
+            transform: translate(-50%, -50%);
+            animation: vcrShimmer 4s ease-in-out infinite;
+        }
+        @keyframes vcrShimmer {
+            /* 0.65 — обычная яркость; запас до 1 — для плавной вспышки при клике */
+            0%, 100% { opacity: 0.65; }
+            50% { opacity: 0.6; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .vcr-glow { animation: none; }
+        }
+        .cat-eye { position: absolute; }
+        .eye-glow {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            opacity: var(--glow);
+            transform-origin: center;
+            background: radial-gradient(ellipse at 45% 42%,
+                #f6ffc2 0%, #c4f456 38%, #6fae22 72%, rgba(70, 110, 15, 0.6) 100%);
+            box-shadow: 0 0 5px 1px rgba(200, 255, 100, 0.55),
+                        0 0 14px 4px rgba(160, 230, 60, 0.22);
+        }
+        .pupil {
+            position: absolute;
+            left: 50%;
+            top: 6%;
+            height: 88%;
+            width: var(--slit);
+            border-radius: 50%;
+            background: #0b1004;
+            transform: translate(calc(-50% + var(--lx) * 1.5px), calc(var(--ly) * 0.8px));
+        }
+
+        /* Потёртости, наклейки и царапины на корешках — поверх кассеты,
+           под пылью на торце. Рисуются в JS, у каждой кассеты свои. */
+        .cassette-wear {
+            position: absolute;
+            width: 28px;
+            height: 192px;
+            z-index: 10;
+            pointer-events: none;
+            transition: transform 0.2s ease;
+        }
+
+        /* Пыль на верхних торцах кассет — над кассетой, под летающей пылью.
+           Текстура генерируется в JS; при вытаскивании кассеты пыль стирается. */
+        .cassette-dust {
+            position: absolute;
+            width: 28px;
+            height: 18px;
+            z-index: 11;
+            pointer-events: none;
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            transition: transform 0.2s ease, opacity 0.4s ease;
+        }
+        #posterDust { z-index: 22; }
+
         /* ========== ЗВУКОВАЯ ОБЛАСТЬ (полностью невидимая) ========== */
         .vhs-sound-zone {
             position: absolute;
@@ -289,6 +421,9 @@
         <div class="container-wrapper">
             <div class="content-layer" id="contentLayer">
                 <div class="container" id="container"></div>
+                <canvas id="dust"></canvas>
+                <canvas id="spider"></canvas>
+                <canvas id="posterDust"></canvas>
                 <div id="vhsSoundZone" class="vhs-sound-zone"></div>
                 <img id="lightSwitch" class="light-switch" src="./images/off.PNG" alt="Выключатель света">
             </div>
@@ -485,6 +620,7 @@
             const sound = sounds[Math.floor(Math.random() * sounds.length)];
             sound.currentTime = 0;
             sound.play().catch(() => {});
+            return sound;
         }
 
         function stopFlickerSounds() {
@@ -650,7 +786,26 @@
 
             tryPlayBackgroundMusic();
             createCassettes();
+            setupDust();
+            setupSpider();
+            setupCatEyes();
+            setupCatPaw();
+            setupVcrGlow();
+            setupCeilingLight();
+            setupDraft();
             scheduleFlicker();
+        }
+
+        // Место i-й ячейки на полках (в координатах #container)
+        function gridSlot(i) {
+            const row = Math.floor(i / GRID.COLS);
+            const colInRow = i % GRID.COLS;
+            const col = colInRow >= GRID.SKIP_AFTER ? colInRow + 1 : colInRow;
+            const left = col * (GRID.CASSETTE_W + GRID.GAP_X) + GRID.GLOBAL_OFFSET_X;
+            let top = row * (GRID.CASSETTE_H + GRID.GAP_Y);
+            if (row === 1) top += GRID.EXTRA_ROW2_OFFSET;
+            if (row === 2) top += GRID.EXTRA_ROW3_OFFSET;
+            return { left, top };
         }
 
         function positionOverlayContainer() {
@@ -669,9 +824,6 @@
             const total = Math.min(cassettes.length, GRID.COLS * GRID.ROWS);
 
             for (let i = 0; i < total; i++) {
-                const row = Math.floor(i / GRID.COLS);
-                const colInRow = i % GRID.COLS;
-                const col = colInRow >= GRID.SKIP_AFTER ? colInRow + 1 : colInRow;
 
                 const cassette = document.createElement('img');
                 cassette.src = cassettes[i].cassette;
@@ -700,19 +852,21 @@
                     hidePosterDesc();
                 });
 
-                const left = col * (GRID.CASSETTE_W + GRID.GAP_X) + GRID.GLOBAL_OFFSET_X;
-                let top = row * (GRID.CASSETTE_H + GRID.GAP_Y);
-                if (row === 1) top += GRID.EXTRA_ROW2_OFFSET;
-                if (row === 2) top += GRID.EXTRA_ROW3_OFFSET;
+                const { left, top } = gridSlot(i);
 
                 cassette.style.left = `${left}px`;
                 cassette.style.top = `${top}px`;
 
                 fragment.appendChild(cassette);
+                const wear = createWear(cassette, i);
+                if (wear) fragment.appendChild(wear);
+                const topDust = createTopDust(cassette, i);
+                if (topDust) fragment.appendChild(topDust);
                 fragment.appendChild(poster);
             }
 
             container.appendChild(fragment);
+            setupLeaningCassettes(total);
 
             container.addEventListener('click', handleContainerClick);
             container.addEventListener('mouseenter', handleContainerMouseEnter, true);
@@ -738,13 +892,19 @@
             if (!cassette) return;
             playRandomPickSound();
             const shift = Math.random() > 0.5 ? 4 : -4;
-            cassette.style.transform = `translateY(${shift}px)`;
+            straightenCassette(cassette, true);
+            setCassetteShift(cassette, `translateY(${shift}px)`);
+            // Пылят только кассеты, с которых пыль ещё не стёрли
+            const canPuff = !TOP_DUST_ENABLED || isCassetteDusty(cassette);
+            if (PUFF_ON_HOVER && canPuff && Math.random() < PUFF_HOVER_CHANCE) {
+                puffDust(cassetteRectInContainer(cassette), 'hover');
+            }
         }
 
         function handleContainerMouseLeave(e) {
             const cassette = e.target.closest('.vhs-cassette');
             if (!cassette) return;
-            cassette.style.transform = 'none';
+            setCassetteShift(cassette, 'none');
         }
 
         // ========== РАСКРЫТИЕ / СКРЫТИЕ ПОСТЕРА ==========
@@ -779,6 +939,11 @@
             state.currentExpandedPoster = poster;
 
             playOpenSound();
+            // С пыльной кассеты сыплется пыль, с уже протёртой — пара пылинок
+            const wasDusty = !TOP_DUST_ENABLED || isCassetteDusty(cassette);
+            puffDust(cassetteRectInContainer(cassette), wasDusty ? 'pull' : 'hover');
+            wipeTopDust(cassette);
+            straightenCassette(cassette, false); // достали — на место встанет ровно
 
             requestAnimationFrame(() => {
                 setTimeout(() => {
@@ -788,8 +953,22 @@
                     poster.style.transform = `translate(${centerX}px, ${centerY}px) scale(1)`;
 
                     setTimeout(() => {
+                        const posterRect = {
+                            x: centerX,
+                            y: centerY,
+                            w: poster.offsetWidth || posterWidth,
+                            h: poster.offsetHeight || posterHeight,
+                        };
+                        puffDust(posterRect, 'unfold');
                         poster.classList.remove('expanding');
                         state.isAnimating = false;
+                        glitch.rect = posterRect;
+                        if (Math.random() < VHS_GLITCH_CHANCE) {
+                            runVhsGlitch(poster, posterRect, VHS_GLITCH_DURATION, 1,
+                                () => scheduleIdleGlitch(poster));
+                        } else {
+                            scheduleIdleGlitch(poster);
+                        }
                     }, 300);
                 }, 10);
             });
@@ -798,6 +977,7 @@
         function collapseCurrentPoster(callback) {
             if (!state.currentExpandedPoster || state.isAnimating) return;
             state.isAnimating = true;
+            stopVhsGlitch();
             hidePosterDesc();
             playRandomPickSound();
 
@@ -813,8 +993,10 @@
             poster.style.transform = `translate(${x}px, ${y + LAYOUT.EXPAND_OFFSET_Y}px) scale(${LAYOUT.EXPAND_SCALE_START})`;
 
             setTimeout(() => {
+                puffDust(cassetteRectInContainer(cassette), 'land');
                 poster.classList.remove('poster-visible', 'expanding');
                 cassette.style.opacity = '1';
+                showTopDust(cassette);
                 cassette.style.pointerEvents = 'auto';
                 state.currentExpandedPoster = null;
                 state.isAnimating = false;
@@ -830,6 +1012,7 @@
 
         function switchPoster(direction) {
             if (!state.currentExpandedPoster || state.isAnimating) return;
+            stopVhsGlitch();
             hidePosterDesc();
 
             const currentIndex = getCassetteIndexFromId(state.currentExpandedPoster.dataset.cassetteId);
@@ -843,6 +1026,7 @@
             state.currentExpandedPoster.style.transform = '';
             if (oldCassette) {
                 oldCassette.style.opacity = '1';
+                showTopDust(oldCassette);
                 oldCassette.style.pointerEvents = 'auto';
             }
 
@@ -891,13 +1075,1857 @@
             if (soundZone) {
                 soundZone.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    playRandomVhsSound();
+                    const sound = playRandomVhsSound();
+                    const ms = sound && Number.isFinite(sound.duration) ? sound.duration * 1000 : 0;
+                    pulseVcrGlow(ms);
                 });
             }
 
             const ls = document.getElementById('lightSwitch');
             if (ls) ls.addEventListener('click', toggleLight);
         });
+
+        // ========== ПЫЛЬ ==========
+        // Пылинки парят над полками (видны при включённом свете), а кассеты,
+        // когда их достают, задевают или ставят обратно, стряхивают пыль.
+        const DUST_ENABLED = true;
+        const DUST_COUNT = 350;           // пылинок в воздухе
+        const DUST_SPEED = 20;            // скорость блуждания, px/с
+        const DUST_COLOR = '#fff3dc';
+        const PUFF_ENABLED = true;
+        const PUFF_AMOUNT = 2;            // множитель пыли от кассет (0.5 — меньше, 2 — больше)
+        const PUFF_ON_HOVER = true;       // чуть-чуть пыли, когда кассету задевают курсором
+        const PUFF_HOVER_CHANCE = 0.6;
+        const PUFF_MAX_PARTICLES = 600;
+
+        const dustRand = (a, b) => a + Math.random() * (b - a);
+
+        function setupDustCanvas(id) {
+            const canvas = document.getElementById(id);
+            if (!canvas || !canvas.getContext) return null;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(LAYOUT.CONTAINER_W * dpr);
+            canvas.height = Math.round(LAYOUT.CONTAINER_H * dpr);
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return ctx;
+        }
+
+        // ---------- Пыль в воздухе ----------
+        function setupDust() {
+            if (!DUST_ENABLED || DUST_COUNT <= 0) return;
+            const ctx = setupDustCanvas('dust');
+            if (!ctx) return;
+            const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+
+            const particles = Array.from({ length: DUST_COUNT }, () => ({
+                x: dustRand(0, W),
+                y: dustRand(0, H),
+                vx: dustRand(-1, 1) * DUST_SPEED,
+                vy: dustRand(-1, 1) * DUST_SPEED * 0.6,
+                size: Math.random() < 0.85 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.4), // редкие крупные
+                alpha: dustRand(0.25, 0.75),
+                tw: dustRand(0.5, 1.6),       // скорость мерцания пылинки
+                ph: dustRand(0, Math.PI * 2),
+            }));
+
+            let lightMix = state.isLightOn ? 1 : 0; // плавный переход вкл/выкл
+            let cleared = false;
+            let last = performance.now();
+
+            const frame = (now) => {
+                requestAnimationFrame(frame);
+                const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
+                last = now;
+
+                lightMix += ((state.isLightOn ? 1 : 0) - lightMix) * Math.min(1, dt * 4);
+                // В темноте не трогаем холст, чтобы сцена не перерисовывалась зря
+                if (lightMix < 0.01) {
+                    if (!cleared) { ctx.clearRect(0, 0, W, H); cleared = true; }
+                    return;
+                }
+                cleared = false;
+                ctx.clearRect(0, 0, W, H);
+
+                const t = now / 1000;
+                ctx.fillStyle = DUST_COLOR;
+                for (const p of particles) {
+                    // Броуновское блуждание + лёгкий восходящий поток воздуха
+                    p.vx += dustRand(-1, 1) * DUST_SPEED * dt * 2;
+                    p.vy += (dustRand(-1, 1) * DUST_SPEED * 2 - DUST_SPEED * 0.15) * dt;
+                    applyDraft(p, dt, 1.5);
+                    p.vx *= 1 - dt * 0.5;
+                    p.vy *= 1 - dt * 0.5;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    if (p.x < -5) p.x = W + 5; else if (p.x > W + 5) p.x = -5;
+                    if (p.y < -5) p.y = H + 5; else if (p.y > H + 5) p.y = -5;
+
+                    const twinkle = 0.6 + 0.4 * Math.sin(t * p.tw + p.ph);
+                    const a = p.alpha * twinkle * lightMix;
+                    if (a <= 0.01) continue;
+                    ctx.globalAlpha = Math.min(1, a);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            };
+            requestAnimationFrame(frame);
+        }
+
+        // ---------- Пыль от кассет ----------
+        // Свой холст поверх постера; цикл анимации крутится, только пока
+        // есть живые пылинки. Мелкие пылинки + несколько мягких «облачков».
+        const puff = { ctx: null, sprite: null, parts: [], running: false };
+
+        function makePuffSprite() {
+            const s = document.createElement('canvas');
+            s.width = s.height = 64;
+            const sc = s.getContext('2d');
+            const g = sc.createRadialGradient(32, 32, 0, 32, 32, 32);
+            g.addColorStop(0, 'rgba(235, 222, 196, 1)');
+            g.addColorStop(0.4, 'rgba(225, 210, 180, 0.45)');
+            g.addColorStop(1, 'rgba(220, 205, 175, 0)');
+            sc.fillStyle = g;
+            sc.fillRect(0, 0, 64, 64);
+            return s;
+        }
+
+        // rect — в координатах #container: { x, y, w, h }
+        // pull   — кассету достают с полки: пыль сыплется с верхнего торца
+        // unfold — постер развернулся: облачко срывается с краёв
+        // land   — кассету ставят обратно: немного пыли оседает
+        // hover  — кассету задели курсором: пара пылинок
+        function puffDust(rect, kind) {
+            if (!PUFF_ENABLED || PUFF_AMOUNT <= 0) return;
+            const cfg = {
+                pull:   { specks: 20, clouds: 2, speed: 28,  fall: 45, life: [1.2, 2.4], from: 'top' },
+                unfold: { specks: 45, clouds: 6, speed: 140, fall: 10, life: [1.0, 2.2], from: 'edge' },
+                land:   { specks: 12, clouds: 2, speed: 22,  fall: 35, life: [1.0, 2.0], from: 'top' },
+                hover:  { specks: 4,  clouds: 0, speed: 12,  fall: 40, life: [0.8, 1.6], from: 'top' },
+            }[kind];
+            if (!cfg) return;
+
+            if (!puff.ctx) {
+                puff.ctx = setupDustCanvas('posterDust');
+                if (!puff.ctx) return;
+                puff.sprite = makePuffSprite();
+            }
+
+            const now = performance.now();
+            const spawn = (cloud) => {
+                let x, y, vx, vy;
+                if (cfg.from === 'edge') {
+                    // Случайная точка на периметре и нормаль наружу
+                    let nx, ny;
+                    let t = dustRand(0, 2 * (rect.w + rect.h));
+                    if (t < rect.w) { x = rect.x + t; y = rect.y; nx = 0; ny = -1; }
+                    else if ((t -= rect.w) < rect.h) { x = rect.x + rect.w; y = rect.y + t; nx = 1; ny = 0; }
+                    else if ((t -= rect.h) < rect.w) { x = rect.x + rect.w - t; y = rect.y + rect.h; nx = 0; ny = 1; }
+                    else { t -= rect.w; x = rect.x; y = rect.y + rect.h - t; nx = -1; ny = 0; }
+                    const v = cfg.speed * dustRand(0.3, 1) * (cloud ? 0.5 : 1);
+                    vx = nx * v + dustRand(-1, 1) * cfg.speed * 0.25;
+                    vy = ny * v + dustRand(-1, 1) * cfg.speed * 0.25;
+                } else {
+                    // Верхний торец кассеты: лёгкий подброс, потом пыль оседает вниз
+                    x = rect.x + dustRand(-0.2, 1.2) * rect.w;
+                    y = rect.y + dustRand(0, 0.2) * rect.h;
+                    const v = cfg.speed * (cloud ? 0.5 : 1);
+                    vx = dustRand(-1, 1) * v;
+                    vy = dustRand(-0.9, 0.3) * v;
+                }
+                puff.parts.push({
+                    x, y, vx, vy,
+                    fall: cloud ? cfg.fall * 0.1 : cfg.fall * dustRand(0.6, 1.2),
+                    born: now,
+                    life: dustRand(cfg.life[0], cfg.life[1]) * (cloud ? 1.3 : 1),
+                    size: cloud ? dustRand(10, 20) : (Math.random() < 0.8 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.3)),
+                    alpha: cloud ? dustRand(0.12, 0.22) : dustRand(0.4, 0.85),
+                    cloud,
+                });
+            };
+            const n = (k) => Math.round(k * PUFF_AMOUNT);
+            for (let i = 0; i < n(cfg.specks); i++) spawn(false);
+            for (let i = 0; i < n(cfg.clouds); i++) spawn(true);
+            if (puff.parts.length > PUFF_MAX_PARTICLES) {
+                puff.parts.splice(0, puff.parts.length - PUFF_MAX_PARTICLES);
+            }
+
+            if (puff.running) return;
+            puff.running = true;
+            let last = performance.now();
+            const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+            const frame = (t) => {
+                const ctx = puff.ctx;
+                const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05);
+                last = t;
+                ctx.clearRect(0, 0, W, H);
+                puff.parts = puff.parts.filter(p => (t - p.born) / 1000 < p.life);
+                if (!puff.parts.length) { puff.running = false; return; }
+
+                for (const p of puff.parts) {
+                    // Сопротивление воздуха, оседание и случайное блуждание
+                    const drag = p.cloud ? 3 : 2.2;
+                    applyDraft(p, dt, 2);
+                    p.vx += dustRand(-1, 1) * 30 * dt - p.vx * drag * dt;
+                    p.vy += dustRand(-1, 1) * 30 * dt - p.vy * drag * dt + p.fall * dt;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    if (p.cloud) p.size += 8 * dt; // облачко расплывается
+
+                    const k = (t - p.born) / 1000 / p.life;
+                    const a = p.alpha * Math.min(1, k * 10) * (1 - k) ** 1.5;
+                    if (a <= 0.005) continue;
+                    ctx.globalAlpha = a;
+                    if (p.cloud) {
+                        ctx.drawImage(puff.sprite, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+                    } else {
+                        ctx.fillStyle = DUST_COLOR;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        }
+
+        // ---------- Пыль на торцах кассет ----------
+        // Каждая кассета покрыта своим слоем пыли. Когда кассету достают,
+        // пыль стирается (остаётся лёгкий налёт) — видно, какие уже трогали.
+        // Задетая курсором чистая кассета больше не пылит.
+        const TOP_DUST_ENABLED = true;
+        const TOP_DUST_VARIANTS = 8;              // разных текстур пыли
+        const TOP_DUST_OPACITY = [0.55, 0.95];    // разброс «запылённости»
+        const TOP_DUST_RESIDUE = 0.15;            // сколько пыли остаётся после касания (0 — совсем чисто)
+        const TOP_DUST_W = 28, TOP_DUST_H = 18;
+
+        let topDustTextures = null;
+
+        function makeTopDustTexture() {
+            const dpr = 2;
+            const W = TOP_DUST_W, H = TOP_DUST_H;
+            const c = document.createElement('canvas');
+            c.width = W * dpr;
+            c.height = H * dpr;
+            const ctx = c.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            // Сплошной налёт у самого края, неровно уходящий вниз
+            for (let x = 0; x < W; x += 1) {
+                const depth = dustRand(2, 5) + Math.sin(x * 0.7 + dustRand(0, 6)) * 1;
+                const g = ctx.createLinearGradient(0, 0, 0, depth);
+                g.addColorStop(0, 'rgba(205, 195, 175, 0.75)');
+                g.addColorStop(1, 'rgba(190, 180, 160, 0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(x, 0, 1, depth);
+            }
+
+            // Пылинки: густо сверху, реже книзу
+            for (let i = 0; i < 140; i++) {
+                const y = H * Math.pow(Math.random(), 2.2);
+                const density = 1 - y / H;
+                ctx.globalAlpha = dustRand(0.15, 0.6) * density;
+                ctx.fillStyle = Math.random() < 0.7 ? '#cfc4ad' : '#9d927e';
+                const s = Math.random() < 0.85 ? dustRand(0.4, 0.9) : dustRand(1, 1.6);
+                ctx.beginPath();
+                ctx.arc(dustRand(0, W), y, s, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Пара пушинок-комочков на краю
+            const fluffs = Math.floor(dustRand(0, 3));
+            for (let i = 0; i < fluffs; i++) {
+                const fx = dustRand(3, W - 3), fy = dustRand(0, 2.5), fr = dustRand(1.5, 3);
+                const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+                g.addColorStop(0, 'rgba(215, 205, 185, 0.7)');
+                g.addColorStop(1, 'rgba(215, 205, 185, 0)');
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = g;
+                ctx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
+            }
+            ctx.globalAlpha = 1;
+            return c.toDataURL('image/png');
+        }
+
+        function createTopDust(cassette, index) {
+            if (!TOP_DUST_ENABLED) return null;
+            if (!topDustTextures) {
+                topDustTextures = Array.from({ length: TOP_DUST_VARIANTS }, makeTopDustTexture);
+            }
+            const el = document.createElement('div');
+            el.className = 'cassette-dust';
+            el.id = `cassetteDust${index + 1}`;
+            const tex = topDustTextures[Math.floor(Math.random() * topDustTextures.length)];
+            el.style.backgroundImage = `url(${tex})`;
+            el.dataset.opacity = dustRand(TOP_DUST_OPACITY[0], TOP_DUST_OPACITY[1]).toFixed(2);
+            el.style.opacity = el.dataset.opacity;
+            el.style.left = cassette.style.left;
+            el.style.top = cassette.style.top;
+            cassette.dataset.dusty = 'true';
+            return el;
+        }
+
+        function getTopDust(cassette) {
+            return document.getElementById(cassette.id.replace('cassette', 'cassetteDust'));
+        }
+
+        function isCassetteDusty(cassette) {
+            return TOP_DUST_ENABLED && cassette.dataset.dusty === 'true';
+        }
+
+        // Кассету достали: пыль уходит вместе с ней и стирается до налёта
+        function wipeTopDust(cassette) {
+            setWearVisible(cassette, false); // потёртости уходят вместе с кассетой
+            const el = getTopDust(cassette);
+            if (!el) return;
+            if (isCassetteDusty(cassette)) {
+                cassette.dataset.dusty = 'false';
+                el.dataset.opacity = (parseFloat(el.dataset.opacity) * TOP_DUST_RESIDUE).toFixed(2);
+            }
+            el.style.transition = 'none';
+            el.style.opacity = '0';
+        }
+
+        // Кассету вернули на полку — показываем то, что осталось от пыли
+        function showTopDust(cassette) {
+            setWearVisible(cassette, true);
+            const el = getTopDust(cassette);
+            if (!el) return;
+            el.style.transition = '';
+            el.style.opacity = el.dataset.opacity;
+        }
+
+        // Кассета и всё, что на ней нарисовано (пыль на торце, потёртости)
+        function cassetteLayers(cassette) {
+            return [cassette, getTopDust(cassette), getWear(cassette)].filter(Boolean);
+        }
+
+        // transform — сдвиг при наведении; наклон (если кассета покосилась) добавляется сам
+        function setCassetteShift(cassette, transform) {
+            cassette.dataset.shift = transform;
+            const lean = parseFloat(cassette.dataset.lean) || 0;
+            const parts = [];
+            if (transform && transform !== 'none') parts.push(transform);
+            if (lean) parts.push(`rotate(${lean}deg)`);
+            const full = parts.length ? parts.join(' ') : 'none';
+            cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
+        }
+
+        // ---------- Покосившиеся кассеты ----------
+        // Последняя кассета в неполном ряду завалилась в пустоту рядом,
+        // пара случайных чуть покосилась и упирается в соседа.
+        // Наведёшь курсор или достанешь — встаёт ровно и больше не падает.
+        const LEAN_ENABLED = true;
+        const LEAN_INTO_GAP = true;            // последняя в ряду заваливается в пустое место
+        const LEAN_GAP_ANGLE = [7, 11];        // °, наклон в пустоту
+        const LEAN_RANDOM_COUNT = [1, 2];      // сколько случайных кассет чуть покосились
+        const LEAN_RANDOM_ANGLE = [1.2, 1.8];  // °, упираются в соседа (зазор между кассетами 6px)
+        const LEAN_STRAIGHTEN_MS = 450;        // как долго выпрямляется
+
+        function leanCassette(cassette, deg) {
+            if (!cassette || !deg) return;
+            cassette.dataset.lean = deg.toFixed(2);
+            // Опора — нижний угол со стороны наклона (у всех слоёв общий верх-лево)
+            const origin = `${deg > 0 ? GRID.CASSETTE_W : 0}px ${GRID.CASSETTE_H}px`;
+            cassetteLayers(cassette).forEach(el => { el.style.transformOrigin = origin; });
+            setCassetteShift(cassette, 'none');
+        }
+
+        function setupLeaningCassettes(total) {
+            if (!LEAN_ENABLED || total < 2) return;
+            const byIndex = (i) => document.getElementById(`cassette${i + 1}`);
+            const leaned = new Set();
+
+            // Последняя кассета, если ряд не заполнен, — наклон вправо, в пустоту
+            if (LEAN_INTO_GAP && total % GRID.COLS !== 0 && total < GRID.COLS * GRID.ROWS) {
+                leanCassette(byIndex(total - 1), dustRand(LEAN_GAP_ANGLE[0], LEAN_GAP_ANGLE[1]));
+                leaned.add(total - 1);
+            }
+
+            // Пара случайных — чуть-чуть, в сторону существующего соседа по ряду
+            const count = Math.round(dustRand(LEAN_RANDOM_COUNT[0], LEAN_RANDOM_COUNT[1]));
+            for (let n = 0, tries = 0; n < count && tries < 50; tries++) {
+                const i = Math.floor(Math.random() * total);
+                if (leaned.has(i) || leaned.has(i - 1) || leaned.has(i + 1)) continue;
+                const col = i % GRID.COLS;
+                const canRight = col < GRID.COLS - 1 && i + 1 < total;
+                const canLeft = col > 0;
+                if (!canRight && !canLeft) continue;
+                const dir = canRight && (!canLeft || Math.random() < 0.5) ? 1 : -1;
+                leanCassette(byIndex(i), dir * dustRand(LEAN_RANDOM_ANGLE[0], LEAN_RANDOM_ANGLE[1]));
+                leaned.add(i);
+                n++;
+            }
+        }
+
+        // animate — выпрямляется плавно, с лёгким «доводом»; иначе сразу
+        function straightenCassette(cassette, animate) {
+            if (!(parseFloat(cassette.dataset.lean) || 0)) return;
+            cassette.dataset.lean = '0';
+            const layers = cassetteLayers(cassette);
+            if (animate) {
+                layers.forEach(el => {
+                    el.style.transition = `transform ${LEAN_STRAIGHTEN_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1)`;
+                });
+                setTimeout(() => layers.forEach(el => { el.style.transition = ''; }), LEAN_STRAIGHTEN_MS + 50);
+            }
+            setCassetteShift(cassette, cassette.dataset.shift || 'none');
+        }
+
+        // ---------- Потёртые кассеты ----------
+        // Часть корешков потёрта: царапины, выгоревший край, загнутый уголок,
+        // захватанное место, остатки сорванной наклейки и наклейки видеопроката.
+        // Рисунок зависит от имени файла кассеты (и WEAR_SEED), поэтому у каждой
+        // кассеты он всегда один и тот же и не меняется при добавлении новых.
+        const WEAR_ENABLED = true;
+        const WEAR_SEED = 7;  // поменяйте число — получите другой набор потёртостей
+        const WEAR_CHANCE = { // 0..1, шанс каждого вида потёртости на кассете
+            scratches: 0.5,
+            faded: 0.3,
+            smudge: 0.3,
+            torn: 0.12,
+            sticker: 0.1,
+            corner: 0.25,
+        };
+        const WEAR_STICKER_TEXTS = ['ПРОКАТ', '3 ДНЯ', '15 р.', '25 р.', 'ХИТ!', 'НОВ.', '№'];
+        const WEAR_STICKER_COLORS = [
+            { bg: '#f3dc4a', fg: '#b3261e' },   // жёлтая
+            { bg: '#f59a3c', fg: '#1d1a17' },   // оранжевая
+            { bg: '#efe9da', fg: '#c0282d' },   // белая
+            { bg: '#86d06f', fg: '#1d1a17' },   // зелёная
+        ];
+
+        function getWear(cassette) {
+            return document.getElementById(cassette.id.replace('cassette', 'cassetteWear'));
+        }
+
+        function setWearVisible(cassette, visible) {
+            const el = getWear(cassette);
+            if (el) el.style.opacity = visible ? '' : '0';
+        }
+
+        // Предсказуемый генератор случайных чисел (mulberry32) из строки
+        function seededRandom(str) {
+            let h = 2166136261 ^ WEAR_SEED;
+            for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+            let a = h >>> 0;
+            return () => {
+                a = (a + 0x6D2B79F5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function createWear(cassette, index) {
+            if (!WEAR_ENABLED) return null;
+            const rnd = seededRandom(cassettes[index].cassette);
+            const r = (a, b) => a + rnd() * (b - a);
+            const has = {};
+            for (const k of Object.keys(WEAR_CHANCE)) has[k] = rnd() < WEAR_CHANCE[k];
+            if (!Object.values(has).some(Boolean)) return null;
+
+            const W = GRID.CASSETTE_W, H = GRID.CASSETTE_H, dpr = 2;
+            const c = document.createElement('canvas');
+            c.className = 'cassette-wear';
+            c.id = `cassetteWear${index + 1}`;
+            c.width = W * dpr;
+            c.height = H * dpr;
+            c.style.left = cassette.style.left;
+            c.style.top = cassette.style.top;
+            const ctx = c.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            // Выгоревший на солнце край
+            if (has.faded) {
+                const fromTop = rnd() < 0.6;
+                const len = H * r(0.3, 0.6);
+                const g = ctx.createLinearGradient(0, fromTop ? 0 : H, 0, fromTop ? len : H - len);
+                g.addColorStop(0, `rgba(255, 238, 205, ${r(0.14, 0.24).toFixed(2)})`);
+                g.addColorStop(1, 'rgba(255, 238, 205, 0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // Захватанное место посередине, где кассету берут пальцами
+            if (has.smudge) {
+                const y = r(70, 130), rad = r(8, 13);
+                const g = ctx.createRadialGradient(W / 2 + r(-4, 4), y, 0, W / 2, y, rad);
+                const shiny = rnd() < 0.4;
+                g.addColorStop(0, shiny ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.22)');
+                g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = g;
+                ctx.fillRect(0, y - rad, W, rad * 2);
+            }
+
+            // Царапины — в основном вдоль корешка
+            if (has.scratches) {
+                const n = Math.floor(r(2, 6));
+                for (let i = 0; i < n; i++) {
+                    const x = r(2, W - 2), y = r(20, H - 10);
+                    const len = r(8, 45), a = Math.PI / 2 + r(-0.35, 0.35);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${r(0.15, 0.32).toFixed(2)})`;
+                    ctx.lineWidth = r(0.35, 0.7);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+                    ctx.stroke();
+                }
+            }
+
+            // Остатки сорванной наклейки: рваная бумага и следы клея
+            if (has.torn) {
+                const h = r(14, 26), y = r(40, H - 60);
+                ctx.fillStyle = 'rgba(200, 180, 120, 0.22)'; // клей
+                ctx.fillRect(2, y - 2, W - 4, h + 4);
+                ctx.fillStyle = 'rgba(232, 224, 205, 0.8)';  // клочки бумаги
+                ctx.beginPath();
+                const pts = 10;
+                for (let i = 0; i <= pts; i++) ctx.lineTo(3 + (W - 6) * i / pts, y + r(0, h * 0.5));
+                for (let i = pts; i >= 0; i--) ctx.lineTo(3 + (W - 6) * i / pts, y + h - r(0, h * 0.6));
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Наклейка видеопроката внизу (поверх логотипа VHS)
+            if (has.sticker) {
+                let text = WEAR_STICKER_TEXTS[Math.floor(rnd() * WEAR_STICKER_TEXTS.length)];
+                if (text === '№') text = '№ ' + Math.floor(r(1, 300));
+                const col = WEAR_STICKER_COLORS[Math.floor(rnd() * WEAR_STICKER_COLORS.length)];
+                ctx.font = 'bold 7px Arial, sans-serif';
+                const len = Math.min(40, ctx.measureText(text).width + 8);
+                const cy = H - 6 - len / 2 - r(0, 14);
+                ctx.save();
+                ctx.translate(W / 2 + r(-1, 1), cy);
+                ctx.rotate(-Math.PI / 2 + r(-0.06, 0.06)); // текст снизу вверх, чуть криво
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 2;
+                ctx.shadowOffsetY = 1;
+                ctx.globalAlpha = r(0.82, 0.95);              // слегка выцвела
+                ctx.fillStyle = col.bg;
+                ctx.fillRect(-len / 2, -8, len, 16);
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = col.fg;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, 0, 0.5);
+                // Потёртые края наклейки
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                for (let i = 0; i < 6; i++) {
+                    ctx.fillRect(r(-len / 2, len / 2), rnd() < 0.5 ? -8 : 7, r(1, 4), 1);
+                }
+                ctx.restore();
+            }
+
+            // Загнутый уголок наклейки: под ним — чёрный пластик, сверху — изнанка бумаги
+            if (has.corner) {
+                const s = r(5, 9);
+                const right = rnd() < 0.5;
+                const bottom = rnd() < 0.7;
+                const cx = right ? W : 0, cy = bottom ? H : 0;
+                const dx = right ? -s : s, dy = bottom ? -s : s;
+                ctx.fillStyle = 'rgba(8, 8, 8, 0.9)';
+                ctx.beginPath();
+                ctx.moveTo(cx, cy); ctx.lineTo(cx + dx, cy); ctx.lineTo(cx, cy + dy);
+                ctx.closePath();
+                ctx.fill();
+                const g = ctx.createLinearGradient(cx + dx / 2, cy + dy / 2, cx + dx, cy + dy);
+                g.addColorStop(0, '#d9cfb8');
+                g.addColorStop(1, '#f1ead9');
+                ctx.fillStyle = g;
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(cx + dx, cy); ctx.lineTo(cx, cy + dy); ctx.lineTo(cx + dx, cy + dy);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+            }
+
+            return c;
+        }
+
+        // ========== VHS-ПОМЕХИ НА ПОСТЕРЕ ==========
+        // Постер «включается» как запись на кассете: расслоение цвета, рваные
+        // строки, бегущая полоса трекинга, снег и шум внизу кадра.
+        // Рисуем только через drawImage — работает и при открытии с диска (file://).
+        const VHS_GLITCH_ENABLED = true;
+        const VHS_GLITCH_CHANCE = 0.25;                // 0..1, шанс помех при открытии постера
+        const VHS_GLITCH_DURATION = 700;            // мс, помехи при открытии постера
+        const VHS_GLITCH_FPS = 30;                  // «дёрганость» помех
+        const VHS_GLITCH_IDLE = true;               // редкие короткие помехи, пока постер открыт
+        const VHS_GLITCH_IDLE_GAP = [4000, 10000];  // мс между проверками
+        const VHS_GLITCH_IDLE_CHANCE = 0.5;         // 0..1, шанс помех на каждой проверке
+        const VHS_GLITCH_IDLE_DURATION = 260;
+        const VHS_GLITCH_IDLE_STRENGTH = 0.45;      // 0..1
+
+        const glitch = {
+            canvas: null, ctx: null,
+            buf: null, red: null, cyan: null,       // промежуточные холсты
+            raf: 0, idleTimer: 0, rect: null,
+        };
+
+        const reducedMotion = window.matchMedia
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function makeOffscreen(w, h) {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            return c;
+        }
+
+        // Один цветовой канал постера: картинка × цвет, прозрачность — как у оригинала
+        function makeChannel(img, w, h, color) {
+            const c = makeOffscreen(w, h);
+            const cx = c.getContext('2d');
+            cx.drawImage(img, 0, 0, w, h);
+            cx.globalCompositeOperation = 'multiply';
+            cx.fillStyle = color;
+            cx.fillRect(0, 0, w, h);
+            cx.globalCompositeOperation = 'destination-in';
+            cx.drawImage(img, 0, 0, w, h);
+            return c;
+        }
+
+        function prepareGlitch(poster, rect) {
+            if (!glitch.canvas) {
+                const c = document.createElement('canvas');
+                c.id = 'vhsGlitch';
+                document.getElementById('container').appendChild(c);
+                glitch.canvas = c;
+                glitch.ctx = c.getContext('2d');
+            }
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const W = Math.round(rect.w * dpr), H = Math.round(rect.h * dpr);
+            const c = glitch.canvas;
+            c.width = W;
+            c.height = H;
+            c.style.width = rect.w + 'px';
+            c.style.height = rect.h + 'px';
+            c.style.transform = `translate(${rect.x}px, ${rect.y}px)`;
+            glitch.buf = makeOffscreen(W, H);
+            glitch.red = makeChannel(poster, W, H, '#ff0000');
+            glitch.cyan = makeChannel(poster, W, H, '#00ffff');
+            glitch.dpr = dpr;
+        }
+
+        function renderGlitch(k, t) {
+            const ctx = glitch.ctx;
+            const W = glitch.canvas.width, H = glitch.canvas.height, s = glitch.dpr;
+
+            // 1. Расслоение цвета: красный канал уезжает вправо, голубой — влево
+            const b = glitch.buf.getContext('2d');
+            const split = (1.5 + 5 * k + Math.random() * 3 * k) * s;
+            b.globalCompositeOperation = 'source-over';
+            b.clearRect(0, 0, W, H);
+            b.drawImage(glitch.cyan, -split / 2, 0);
+            b.globalCompositeOperation = 'lighter';
+            b.drawImage(glitch.red, split / 2, 0);
+
+            // 2. Рваные строки; сильнее всего — около полосы трекинга
+            const barH = H * 0.12;
+            const barY = ((t * 0.45 * H / 1000) % (H + barH)) - barH; // ползёт вниз
+            const headH = H * 0.04;                                   // шум внизу кадра
+            ctx.clearRect(0, 0, W, H);
+            let y = 0;
+            while (y < H) {
+                const h = Math.min(H - y, Math.round((2 + Math.random() * 12) * s));
+                const mid = y + h / 2;
+                let dx = (Math.random() - 0.5) * 4 * s * k;
+                const nearBar = Math.exp(-(((mid - barY - barH / 2) / barH) ** 2) * 2);
+                dx += nearBar * (12 + Math.random() * 18) * s * k * (Math.random() < 0.5 ? -1 : 1);
+                if (Math.random() < 0.06 * k) dx += (Math.random() - 0.5) * 50 * s * k; // редкий срыв
+                if (mid > H - headH) dx += (8 + Math.random() * 10) * s * Math.max(k, 0.4);
+                ctx.drawImage(glitch.buf, 0, y, W, h, dx, y, W, h);
+                y += h;
+            }
+
+            // 3. Полоса трекинга: светлая муть и белые чёрточки
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.07 * k})`;
+            ctx.fillRect(0, barY, W, barH);
+            for (let i = 0; i < 40 * k; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + Math.random() * 0.5})`;
+                ctx.fillRect(Math.random() * W, barY + Math.random() * barH,
+                    (4 + Math.random() * 40) * s, s);
+            }
+
+            // 4. Снег по всему кадру
+            for (let i = 0; i < 70 * k; i++) {
+                const g = 150 + Math.floor(Math.random() * 105);
+                ctx.fillStyle = `rgba(${g}, ${g}, ${g}, ${0.15 + Math.random() * 0.45})`;
+                ctx.fillRect(Math.random() * W, Math.random() * H, (1 + Math.random() * 6) * s, s);
+            }
+
+            // 5. Шум внизу кадра (переключение видеоголовок)
+            ctx.fillStyle = `rgba(20, 20, 20, ${0.35 * Math.max(k, 0.4)})`;
+            ctx.fillRect(0, H - headH, W, headH);
+            for (let i = 0; i < 25; i++) {
+                ctx.fillStyle = `rgba(230, 230, 230, ${Math.random() * 0.5})`;
+                ctx.fillRect(Math.random() * W, H - headH + Math.random() * headH,
+                    (6 + Math.random() * 30) * s, s);
+            }
+
+            // 6. Лёгкое мерцание яркости
+            if (Math.random() < 0.5) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.06 * k})`;
+                ctx.fillRect(0, 0, W, H);
+            }
+        }
+
+        function stopVhsGlitch() {
+            clearTimeout(glitch.idleTimer);
+            glitch.idleTimer = 0;
+            if (glitch.raf) cancelAnimationFrame(glitch.raf);
+            glitch.raf = 0;
+            if (glitch.canvas) glitch.canvas.style.display = 'none';
+        }
+
+        // rect — где стоит развёрнутый постер в #container: { x, y, w, h }
+        function runVhsGlitch(poster, rect, duration, peak, onEnd) {
+            if (!VHS_GLITCH_ENABLED || reducedMotion) return;
+            if (glitch.raf) cancelAnimationFrame(glitch.raf);
+            glitch.raf = 0;
+            if (!poster.complete || !poster.naturalWidth || rect.w < 1 || rect.h < 1) return;
+
+            prepareGlitch(poster, rect);
+            glitch.rect = rect;
+            glitch.canvas.style.display = 'block';
+
+            const start = performance.now();
+            let lastDraw = 0;
+            const frame = (now) => {
+                const p = (now - start) / duration;
+                if (p >= 1) {
+                    glitch.raf = 0;
+                    glitch.canvas.style.display = 'none';
+                    if (typeof onEnd === 'function') onEnd();
+                    return;
+                }
+                glitch.raf = requestAnimationFrame(frame);
+                if (now - lastDraw < 1000 / VHS_GLITCH_FPS) return;
+                lastDraw = now;
+                // Сначала сильно, потом затухает; изредка «проваливается»
+                let k = peak * (p < 0.15 ? 1 : Math.pow(1 - (p - 0.15) / 0.85, 1.5));
+                if (Math.random() < 0.15) k *= 0.3;
+                renderGlitch(k, now - start);
+            };
+            glitch.raf = requestAnimationFrame(frame);
+        }
+
+        function scheduleIdleGlitch(poster) {
+            clearTimeout(glitch.idleTimer);
+            if (!VHS_GLITCH_IDLE) return;
+            glitch.idleTimer = setTimeout(() => {
+                if (state.currentExpandedPoster !== poster || state.isAnimating || !glitch.rect) return;
+                if (Math.random() >= VHS_GLITCH_IDLE_CHANCE) { scheduleIdleGlitch(poster); return; }
+                runVhsGlitch(poster, glitch.rect, VHS_GLITCH_IDLE_DURATION, VHS_GLITCH_IDLE_STRENGTH,
+                    () => scheduleIdleGlitch(poster));
+            }, dustRand(VHS_GLITCH_IDLE_GAP[0], VHS_GLITCH_IDLE_GAP[1]));
+        }
+
+        // ========== ПАУК НА ПАУТИНКЕ ==========
+        // Время от времени (при свете) паук спускается с потолка на нити:
+        // рывками, с паузами, пружинит и раскачивается, висит, шевеля лапами,
+        // и забирается обратно. Если подвести курсор — быстро удирает вверх.
+        const SPIDER_ENABLED = true;
+        const SPIDER_GAP = [15000, 40000];   // мс между попытками появиться
+        const SPIDER_CHANCE = 0.6;           // 0..1, шанс появления на каждой попытке
+        const SPIDER_ONLY_IN_LIGHT = true;   // в темноте его всё равно не видно
+        const SPIDER_DROP = [70, 260];       // px, насколько низко спускается
+        const SPIDER_HANG = [3000, 8000];    // мс висит внизу
+        const SPIDER_SCARE_RADIUS = 70;      // px, курсор ближе — паук удирает
+        const SPIDER_SIZE = [0.85, 1.25];    // разброс размера
+        const SPIDER_DESCEND_SPEED = 55;     // px/с
+        const SPIDER_CLIMB_SPEED = 35;       // px/с
+        const SPIDER_FLEE_SPEED = 170;       // px/с
+
+        const spider = { ctx: null, active: null, timer: 0, mouseX: -1e4, mouseY: -1e4 };
+
+        function setupSpider() {
+            if (!SPIDER_ENABLED) return;
+            spider.ctx = setupDustCanvas('spider');
+            if (!spider.ctx) return;
+            document.addEventListener('mousemove', (e) => {
+                spider.mouseX = e.clientX;
+                spider.mouseY = e.clientY;
+            });
+            scheduleSpider();
+        }
+
+        function scheduleSpider() {
+            clearTimeout(spider.timer);
+            spider.timer = setTimeout(() => {
+                const lightOk = !SPIDER_ONLY_IN_LIGHT || state.isLightOn;
+                if (!spider.active && lightOk && Math.random() < SPIDER_CHANCE) startSpider();
+                scheduleSpider();
+            }, dustRand(SPIDER_GAP[0], SPIDER_GAP[1]));
+        }
+
+        function startSpider() {
+            const now = performance.now();
+            spider.active = {
+                x: dustRand(30, LAYOUT.CONTAINER_W - 30), // точка крепления нити
+                len: 0,
+                target: dustRand(SPIDER_DROP[0], SPIDER_DROP[1]),
+                phase: 'descend',
+                phaseStart: now,
+                pauseUntil: 0,
+                hangFor: dustRand(SPIDER_HANG[0], SPIDER_HANG[1]),
+                swing: 0,
+                swingV: dustRand(-0.15, 0.15),
+                scale: dustRand(SPIDER_SIZE[0], SPIDER_SIZE[1]),
+                flee: false,
+                twitchUntil: 0,
+                bob: 0,
+            };
+            const ctx = spider.ctx;
+            let last = now;
+            const frame = (t) => {
+                const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05);
+                last = t;
+                ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+                if (!updateSpider(spider.active, t, dt)) { spider.active = null; return; }
+                drawSpider(ctx, spider.active, t);
+                requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        }
+
+        function spiderPos(s) {
+            const L = Math.max(0, s.len + s.bob);
+            return { x: s.x + Math.sin(s.swing) * L, y: Math.cos(s.swing) * L };
+        }
+
+        // false — паук уполз, анимацию можно останавливать
+        function updateSpider(s, now, dt) {
+            // Маятник: чем длиннее нить, тем медленнее качается; плюс сквозняк
+            const w2 = 900 / Math.max(s.len, 20);
+            s.swingV += (-w2 * Math.sin(s.swing) - s.swingV * 0.5 + dustRand(-1, 1) * 0.15) * dt;
+            if (draft.active) {
+                const sp = spiderPos(s);
+                const w = draftWindAt(sp.x, sp.y);
+                if (w) s.swingV += w.x * DRAFT_SPIDER_PUSH * dt; // сквозняк раскачивает нить
+            }
+            s.swing = Math.max(-0.5, Math.min(0.5, s.swing + s.swingV * dt));
+
+            // Курсор рядом — удираем наверх
+            if (!s.flee && s.len > 10) {
+                const rect = document.getElementById('container').getBoundingClientRect();
+                const p = spiderPos(s);
+                const d = Math.hypot(spider.mouseX - rect.left - p.x, spider.mouseY - rect.top - p.y);
+                if (d < SPIDER_SCARE_RADIUS * s.scale) {
+                    s.flee = true;
+                    s.phase = 'ascend';
+                    s.bob = 0;
+                    s.swingV += dustRand(-0.6, 0.6);
+                }
+            }
+
+            if (s.phase === 'descend') {
+                if (now >= s.pauseUntil) {
+                    s.len += SPIDER_DESCEND_SPEED * dt;
+                    // Спускается рывками: иногда замирает
+                    if (Math.random() < 0.6 * dt) s.pauseUntil = now + dustRand(300, 1200);
+                }
+                if (s.len >= s.target) {
+                    s.len = s.target;
+                    s.phase = 'hang';
+                    s.phaseStart = now;
+                    s.swingV += dustRand(-0.1, 0.1);
+                }
+            } else if (s.phase === 'hang') {
+                const t = (now - s.phaseStart) / 1000;
+                s.bob = 7 * Math.exp(-t * 4) * Math.sin(t * 14); // пружинит на нити
+                if (now > s.twitchUntil && Math.random() < 0.5 * dt) s.twitchUntil = now + dustRand(200, 600);
+                if (now - s.phaseStart > s.hangFor) {
+                    s.phase = 'ascend';
+                    s.bob = 0;
+                }
+            } else {
+                s.len -= (s.flee ? SPIDER_FLEE_SPEED : SPIDER_CLIMB_SPEED) * dt;
+                if (s.len <= -14 * s.scale) return false; // целиком скрылся за верхним краем
+            }
+            return true;
+        }
+
+        function drawSpider(ctx, s, now) {
+            const p = spiderPos(s);
+
+            // Нить
+            if (p.y > 0) {
+                ctx.strokeStyle = 'rgba(230, 228, 220, 0.35)';
+                ctx.lineWidth = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(s.x, 0);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            }
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(-s.swing);
+            ctx.scale(s.scale, s.scale);
+
+            // Лапы: головой вниз, брюшко крепится к нити.
+            // Шевелятся при движении, слегка подрагивают, когда висит.
+            const moving = s.phase === 'ascend' || (s.phase === 'descend' && now >= s.pauseUntil);
+            const twitch = now < s.twitchUntil;
+            const amp = s.flee ? 0.45 : moving ? 0.22 : twitch ? 0.15 : 0.04;
+            const speed = s.flee ? 24 : moving ? 12 : twitch ? 18 : 2;
+            const t = now / 1000;
+            const BASE = [60, 25, -10, -45].map(a => a * Math.PI / 180);
+            ctx.strokeStyle = '#16110d';
+            ctx.lineCap = 'round';
+            for (const side of [1, -1]) {
+                for (let i = 0; i < 4; i++) {
+                    const phase = (i % 2 ? Math.PI : 0) + (side < 0 ? Math.PI : 0);
+                    const a = BASE[i] + Math.sin(t * speed + phase) * amp;
+                    const ox = side * 1.6, oy = 12;
+                    const kx = ox + side * Math.cos(a - 0.7) * 8;
+                    const ky = oy + Math.sin(a - 0.7) * 8;
+                    const fx = kx + side * Math.cos(a + 0.8) * 9.5;
+                    const fy = ky + Math.sin(a + 0.8) * 9.5;
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(kx, ky); ctx.stroke();
+                    ctx.lineWidth = 0.9;
+                    ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+                }
+            }
+
+            // Брюшко с бликом
+            ctx.fillStyle = '#1b1511';
+            ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+            const g = ctx.createRadialGradient(-1.3, 3.5, 0, -1.3, 3.5, 3);
+            g.addColorStop(0, 'rgba(140, 115, 90, 0.55)');
+            g.addColorStop(1, 'rgba(140, 115, 90, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+
+            // Головогрудь и глазки
+            ctx.fillStyle = '#231b15';
+            ctx.beginPath(); ctx.ellipse(0, 12.5, 3, 3.3, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(210, 190, 150, 0.6)';
+            ctx.beginPath(); ctx.arc(-0.9, 14.7, 0.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0.9, 14.7, 0.5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ========== ГЛАЗА КОШКИ В ТЕМНОТЕ ==========
+        // Пока свет выключен, из пустой ячейки на полке иногда выглядывает кошка:
+        // глаза открываются, следят за курсором, моргают, потом закрываются,
+        // и кошка перебирается в другое место. Включили свет, открыли постер
+        // или подвели курсор слишком близко — тут же прячется.
+        const CAT_EYES_ENABLED = true;
+        const CAT_EYES_GAP = [5000, 15000];   // мс между попытками появиться
+        const CAT_EYES_CHANCE = 0.7;          // 0..1, шанс появления на каждой попытке
+        const CAT_EYES_STAY = [6000, 15000];  // мс смотрит, потом уходит
+        const CAT_EYES_SHY_RADIUS = 45;       // px, курсор ближе — прячется
+        // Места, откуда выглядывает кошка ({ x, y } в координатах полок).
+        // Пусто — берутся пустые ячейки полок (где нет кассет).
+        const CAT_EYES_SPOTS = [];
+        const CAT_BLINK_DELAY = [2000, 6000]; // мс между морганиями
+        const CAT_EYE_W = 9, CAT_EYE_H = 6;   // размер глаза, px
+        const CAT_EYE_SPACING = 13;           // расстояние между центрами глаз, px
+
+        const cat = {
+            wrap: null, pair: null, glows: [], spots: [],
+            phase: 'away',        // away | watching | leaving
+            x: 0, y: 0, glow: 0, slit: 0.42, lx: 0, ly: 0,
+            leaveAt: 0, fastLeave: false,
+            timer: 0, blinkTimer: 0, raf: 0,
+            mx: -1e4, my: -1e4,
+        };
+
+        function findCatSpots() {
+            if (CAT_EYES_SPOTS.length) {
+                return CAT_EYES_SPOTS.map(s => ({ x: s.x, yMin: s.y, yMax: s.y }));
+            }
+            // Только пустые ячейки на полках, где уже стоят кассеты (там точно полка);
+            // если они заняты целиком — следующий ряд
+            const collect = (from, to) => {
+                const spots = [];
+                for (let i = from; i < to; i++) {
+                    const { left, top } = gridSlot(i);
+                    const yMin = top + 30;
+                    const yMax = Math.min(top + GRID.CASSETTE_H - 20, LAYOUT.CONTAINER_H - 15);
+                    if (yMax > yMin) spots.push({ x: left + GRID.CASSETTE_W / 2, yMin, yMax });
+                }
+                return spots;
+            };
+            const maxSlots = GRID.COLS * GRID.ROWS;
+            const used = Math.min(cassettes.length, maxSlots);
+            const rowEnd = Math.ceil(used / GRID.COLS) * GRID.COLS;
+            const spots = collect(used, Math.min(rowEnd, maxSlots));
+            return spots.length ? spots : collect(used, Math.min(used + GRID.COLS, maxSlots));
+        }
+
+        function setupCatEyes() {
+            if (!CAT_EYES_ENABLED) return;
+            const overlay = document.getElementById('overlayContainer');
+            if (!overlay) return;
+            cat.spots = findCatSpots();
+            if (!cat.spots.length) return;
+
+            const wrap = document.createElement('div');
+            wrap.id = 'catEyes';
+            const pair = document.createElement('div');
+            pair.className = 'cat-eyes-pair';
+            cat.glows = [-1, 1].map(side => {
+                const eye = document.createElement('div');
+                eye.className = 'cat-eye';
+                eye.style.left = (side * CAT_EYE_SPACING / 2 - CAT_EYE_W / 2) + 'px';
+                eye.style.top = (-CAT_EYE_H / 2) + 'px';
+                eye.style.width = CAT_EYE_W + 'px';
+                eye.style.height = CAT_EYE_H + 'px';
+                eye.style.transform = `rotate(${side * 8}deg)`; // слегка раскосые
+                const glow = document.createElement('div');
+                glow.className = 'eye-glow';
+                const pupil = document.createElement('div');
+                pupil.className = 'pupil';
+                glow.appendChild(pupil);
+                eye.appendChild(glow);
+                pair.appendChild(eye);
+                return glow;
+            });
+            wrap.appendChild(pair);
+            overlay.appendChild(wrap);
+            cat.wrap = wrap;
+            cat.pair = pair;
+
+            document.addEventListener('mousemove', (e) => {
+                cat.mx = e.clientX;
+                cat.my = e.clientY;
+            });
+            scheduleCat();
+        }
+
+        function scheduleCat() {
+            clearTimeout(cat.timer);
+            cat.timer = setTimeout(() => {
+                const canAppear = cat.phase === 'away' && !state.isLightOn && !state.currentExpandedPoster;
+                if (canAppear && Math.random() < CAT_EYES_CHANCE) catAppear();
+                else scheduleCat();
+            }, dustRand(CAT_EYES_GAP[0], CAT_EYES_GAP[1]));
+        }
+
+        function animateEyelids(from, to, duration) {
+            cat.glows.forEach(g => {
+                if (typeof g.animate !== 'function') return;
+                g.getAnimations().forEach(a => a.cancel());
+                g.animate([{ transform: `scaleY(${from})` }, { transform: `scaleY(${to})` }],
+                    { duration, easing: 'ease-in-out', fill: 'forwards' });
+            });
+        }
+
+        function catBlink() {
+            cat.glows.forEach(g => {
+                if (typeof g.animate !== 'function') return;
+                g.getAnimations().forEach(a => a.cancel());
+                g.animate([
+                    { transform: 'scaleY(1)' },
+                    { transform: 'scaleY(0.08)', offset: 0.45 },
+                    { transform: 'scaleY(1)' },
+                ], { duration: 180, easing: 'ease-in-out' });
+            });
+        }
+
+        function scheduleCatBlink() {
+            clearTimeout(cat.blinkTimer);
+            cat.blinkTimer = setTimeout(() => {
+                if (cat.phase !== 'watching') return;
+                catBlink();
+                if (Math.random() < 0.2) setTimeout(() => { if (cat.phase === 'watching') catBlink(); }, 260);
+                scheduleCatBlink();
+            }, dustRand(CAT_BLINK_DELAY[0], CAT_BLINK_DELAY[1]));
+        }
+
+        function catAppear() {
+            const spot = cat.spots[Math.floor(Math.random() * cat.spots.length)];
+            cat.x = spot.x;
+            cat.y = dustRand(spot.yMin, spot.yMax);
+            cat.pair.style.transform = `translate(${cat.x}px, ${cat.y}px) rotate(${dustRand(-8, 8).toFixed(1)}deg)`;
+            cat.phase = 'watching';
+            cat.fastLeave = false;
+            cat.leaveAt = performance.now() + dustRand(CAT_EYES_STAY[0], CAT_EYES_STAY[1]);
+            cat.glow = 0;
+            cat.lx = cat.ly = 0;
+            cat.wrap.style.visibility = 'visible';
+            animateEyelids(0.05, 1, 400);
+            scheduleCatBlink();
+
+            let last = performance.now();
+            const frame = (now) => {
+                const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
+                last = now;
+                if (!updateCat(now, dt)) { cat.raf = 0; return; }
+                cat.raf = requestAnimationFrame(frame);
+            };
+            cat.raf = requestAnimationFrame(frame);
+        }
+
+        function catLeave(fast) {
+            if (cat.phase !== 'watching') return;
+            cat.phase = 'leaving';
+            cat.fastLeave = fast;
+            clearTimeout(cat.blinkTimer);
+            animateEyelids(1, 0.05, fast ? 120 : 260);
+        }
+
+        // false — кошка ушла, анимацию можно останавливать
+        function updateCat(now, dt) {
+            // Курсор относительно глаз
+            const rect = document.getElementById('container').getBoundingClientRect();
+            const dx = cat.mx - rect.left - cat.x;
+            const dy = cat.my - rect.top - cat.y;
+            const dist = Math.hypot(dx, dy);
+
+            if (cat.phase === 'watching') {
+                const pawing = paw.active; // пока машет лапой — не пугается и не уходит
+                if (state.isLightOn || state.currentExpandedPoster
+                    || (!pawing && dist < CAT_EYES_SHY_RADIUS)) catLeave(true);
+                else if (now > cat.leaveAt && !pawing) catLeave(false);
+                else maybeSwipePaw(now, dt, dist);
+            }
+
+            const target = cat.phase === 'watching' ? 1 : 0;
+            const rate = cat.phase === 'leaving' ? (cat.fastLeave ? 14 : 5) : 4;
+            cat.glow += (target - cat.glow) * Math.min(1, dt * rate);
+
+            if (cat.phase === 'leaving' && cat.glow < 0.01) {
+                cat.phase = 'away';
+                cat.wrap.style.visibility = 'hidden';
+                cat.wrap.style.setProperty('--glow', '0');
+                scheduleCat();
+                return false;
+            }
+
+            // Зрачки: широкие в темноте, сужаются, когда курсор подбирается ближе
+            // ...а во время охоты на курсор лапой — круглые
+            const near = Math.max(0, 1 - dist / 200);
+            const slitTarget = paw.active ? 0.62 : 0.42 - 0.26 * near;
+            cat.slit += (slitTarget - cat.slit) * Math.min(1, dt * (paw.active ? 8 : 3));
+
+            // Взгляд следует за курсором (плавно, с ограничением)
+            const len = dist || 1;
+            const k = Math.min(1, len / 120);
+            cat.lx += (dx / len * k - cat.lx) * Math.min(1, dt * 5);
+            cat.ly += (dy / len * k - cat.ly) * Math.min(1, dt * 5);
+
+            cat.wrap.style.setProperty('--glow', cat.glow.toFixed(3));
+            cat.wrap.style.setProperty('--slit', (cat.slit * 100).toFixed(1) + '%');
+            cat.wrap.style.setProperty('--lx', cat.lx.toFixed(3));
+            cat.wrap.style.setProperty('--ly', cat.ly.toFixed(3));
+            return true;
+        }
+
+        // ========== СКВОЗНЯК ==========
+        // Время от времени по погребку проходит холодный сквозняк: фронт ветра
+        // идёт с одного края на другой и порывами сносит всё, до чего дошёл —
+        // пыль в воздухе, облачка пыли, нить паука; с пыльных кассет сдувает
+        // пылинки, иногда мигает свет. Звук «вжух» синтезируется из шума.
+        const DRAFT_ENABLED = true;
+        const DRAFT_GAP = [25000, 60000];     // мс между попытками
+        const DRAFT_CHANCE = 0.6;             // 0..1, шанс сквозняка на каждой попытке
+        const DRAFT_DURATION = [3000, 5000];  // мс
+        const DRAFT_STRENGTH = 90;            // px/с, скорость ветра на пике
+        const DRAFT_SHED_RATE = 3;            // раз в секунду ветер сдувает пыль с кассет
+        const DRAFT_SPIDER_PUSH = 0.012;      // насколько сильно раскачивает паука
+        const DRAFT_FLICKER_CHANCE = 0.3;     // 0..1, шанс, что от сквозняка мигнёт свет
+        const DRAFT_SOUND = true;
+        const DRAFT_VOLUME = 0.15;            // громкость «вжуха»
+
+        const draft = {
+            active: false, dir: 1, start: 0, duration: 0, timer: 0,
+            env: 0, front: 0, t: 0,   // пересчитываются каждый кадр
+            cassettes: [], audio: null, noise: null,
+        };
+
+        function setupDraft() {
+            if (!DRAFT_ENABLED) return;
+            scheduleDraft();
+        }
+
+        function scheduleDraft() {
+            clearTimeout(draft.timer);
+            draft.timer = setTimeout(() => {
+                if (!draft.active && Math.random() < DRAFT_CHANCE) startDraft();
+                scheduleDraft();
+            }, dustRand(DRAFT_GAP[0], DRAFT_GAP[1]));
+        }
+
+        // Ветер в точке: { x, y } в px/с, или null, если сквозняк сюда не дошёл
+        function draftWindAt(x, y) {
+            if (!draft.active || draft.env <= 0) return null;
+            // За фронтом — ветер, перед ним — тихо (мягкая граница ~60px)
+            const behind = 1 / (1 + Math.exp(-((draft.front - x) * draft.dir) / 60));
+            if (behind < 0.02) return null;
+            const gust = 0.75 + 0.25 * Math.sin(draft.t * 6 + x * 0.01);
+            const s = DRAFT_STRENGTH * draft.env * behind * gust;
+            return { x: s * draft.dir, y: s * 0.12 * Math.sin(draft.t * 3 + x * 0.02 + y * 0.01) };
+        }
+
+        // Подтягивает скорость частицы к ветру (только где ветер есть)
+        function applyDraft(p, dt, k) {
+            if (!draft.active) return;
+            const w = draftWindAt(p.x, p.y);
+            if (!w) return;
+            const f = Math.min(1, Math.abs(w.x) / DRAFT_STRENGTH) * Math.min(1, dt * k);
+            p.vx += (w.x - p.vx) * f;
+            p.vy += (w.y - p.vy) * f;
+        }
+
+        function startDraft() {
+            const W = LAYOUT.CONTAINER_W;
+            draft.active = true;
+            draft.dir = Math.random() < 0.5 ? -1 : 1;
+            draft.start = performance.now();
+            draft.duration = dustRand(DRAFT_DURATION[0], DRAFT_DURATION[1]);
+            draft.cassettes = Array.from(document.querySelectorAll('.vhs-cassette'));
+
+            if (DRAFT_SOUND) playDraftSound(draft.duration / 1000, draft.dir);
+            if (state.isLightOn && Math.random() < DRAFT_FLICKER_CHANCE) {
+                setTimeout(() => {
+                    if (!state.isLightOn) return;
+                    playRandomFlickerSound();
+                    startFlickerEffect(900);
+                }, draft.duration * 0.35);
+            }
+
+            let last = draft.start;
+            const frame = (now) => {
+                const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
+                last = now;
+                const p = (now - draft.start) / draft.duration;
+                if (p >= 1) { draft.active = false; draft.env = 0; return; }
+
+                // Быстро налетает, медленно стихает; фронт проходит экран за первые 45%
+                draft.env = Math.min(1, p / 0.1) * Math.pow(1 - p, 1.2);
+                const q = Math.min(1, p / 0.45);
+                draft.front = draft.dir > 0 ? -150 + (W + 300) * q : W + 150 - (W + 300) * q;
+                draft.t = now / 1000;
+
+                // С пыльных кассет у фронта сдувает пылинки (их дальше несёт ветром)
+                if (Math.random() < DRAFT_SHED_RATE * dt * draft.env) {
+                    const near = draft.cassettes.filter(c =>
+                        Math.abs(c.offsetLeft + c.offsetWidth / 2 - draft.front) < 80
+                        && c.style.opacity !== '0'
+                        && (!TOP_DUST_ENABLED || isCassetteDusty(c)));
+                    if (near.length) {
+                        const c = near[Math.floor(Math.random() * near.length)];
+                        puffDust(cassetteRectInContainer(c), 'hover');
+                    }
+                }
+                requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        }
+
+        // «Вжух»: мягкий (коричневый) шум через полосовой фильтр, громкость
+        // порывами, звук проезжает из одной колонки в другую вместе с фронтом
+        function playDraftSound(seconds, dir) {
+            if (!state.audioEnabled) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            try {
+                if (!draft.audio) draft.audio = new AC();
+                const ac = draft.audio;
+                if (ac.state === 'suspended') ac.resume();
+
+                if (!draft.noise) {
+                    const len = ac.sampleRate * 2;
+                    const buf = ac.createBuffer(1, len, ac.sampleRate);
+                    const data = buf.getChannelData(0);
+                    let lastOut = 0;
+                    for (let i = 0; i < len; i++) {
+                        lastOut = (lastOut + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+                        data[i] = lastOut * 3.5;
+                    }
+                    draft.noise = buf;
+                }
+
+                const t0 = ac.currentTime;
+                const src = ac.createBufferSource();
+                src.buffer = draft.noise;
+                src.loop = true;
+
+                const band = ac.createBiquadFilter();
+                band.type = 'bandpass';
+                band.Q.value = 0.8;
+                band.frequency.setValueAtTime(250, t0);
+                band.frequency.linearRampToValueAtTime(700, t0 + seconds * 0.4);
+                band.frequency.linearRampToValueAtTime(300, t0 + seconds);
+
+                const gain = ac.createGain();
+                gain.gain.setValueAtTime(0.0001, t0);
+                const steps = 8;
+                for (let i = 1; i < steps; i++) {
+                    const f = i / steps;
+                    const env = Math.min(1, f / 0.2) * Math.pow(1 - f, 1.1);
+                    gain.gain.linearRampToValueAtTime(DRAFT_VOLUME * env * dustRand(0.6, 1), t0 + seconds * f);
+                }
+                gain.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
+
+                let node = src.connect(band).connect(gain);
+                if (ac.createStereoPanner) {
+                    const pan = ac.createStereoPanner();
+                    pan.pan.setValueAtTime(-0.8 * dir, t0);
+                    pan.pan.linearRampToValueAtTime(0.8 * dir, t0 + seconds * 0.5);
+                    node = node.connect(pan);
+                }
+                node.connect(ac.destination);
+                src.start(t0);
+                src.stop(t0 + seconds + 0.1);
+            } catch (e) { /* без звука — не страшно */ }
+        }
+
+        // ========== СВЕЧЕНИЕ ВИДЕОМАГНИТОФОНА ==========
+        // Красные часы и синий/зелёный индикаторы видика (рисунок в lightsMod.png)
+        // мягко подсвечивают полку. В темноте заметно, при свете — едва.
+        // Клик по видику — свечение плавно разгорается и гаснет, пока играет звук.
+        const VCR_GLOW_ENABLED = true;
+        const VCR_GLOW_DARK = 1;       // яркость в темноте (0..1)
+        const VCR_GLOW_LIGHT = 0.2;    // яркость при включённом свете (0..1)
+        const VCR_PULSE_DEFAULT_MS = 1500; // если длина звука неизвестна
+        // Огоньки (центр в координатах полок), размер пятна света и цвет.
+        // alpha — яркость на пике вспышки; в покое ≈ 65% от неё.
+        const VCR_LIGHTS = [
+            { x: 618, y: 542, w: 360, h: 150, color: '255, 50, 40',  alpha: 0.3 },  // часы
+            { x: 447, y: 548, w: 120, h: 80,  color: '80, 110, 255', alpha: 0.28 }, // питание
+            { x: 886, y: 540, w: 100, h: 70,  color: '80, 255, 120', alpha: 0.2 },  // индикатор
+        ];
+
+        const vcr = { wrap: null, glows: [] };
+
+        function setupVcrGlow() {
+            if (!VCR_GLOW_ENABLED) return;
+            const overlay = document.getElementById('overlayContainer');
+            if (!overlay) return;
+            const wrap = document.createElement('div');
+            wrap.id = 'vcrGlow';
+            vcr.glows = VCR_LIGHTS.map((l, i) => {
+                const g = document.createElement('div');
+                g.className = 'vcr-glow';
+                g.style.left = l.x + 'px';
+                g.style.top = l.y + 'px';
+                g.style.width = l.w + 'px';
+                g.style.height = l.h + 'px';
+                // Много ступеней — мягкий, без заметной границы спад
+                g.style.background = `radial-gradient(ellipse at center,
+                    rgba(${l.color}, ${l.alpha}) 0%,
+                    rgba(${l.color}, ${(l.alpha * 0.55).toFixed(3)}) 25%,
+                    rgba(${l.color}, ${(l.alpha * 0.22).toFixed(3)}) 50%,
+                    rgba(${l.color}, ${(l.alpha * 0.06).toFixed(3)}) 75%,
+                    rgba(${l.color}, 0) 100%)`;
+                g.style.animationDelay = `${-i * 1.3}s`; // дышат вразнобой
+                wrap.appendChild(g);
+                return g;
+            });
+            // Под картинкой с огоньками — сами огоньки остаются чёткими поверх свечения
+            overlay.insertBefore(wrap, overlay.firstChild);
+            vcr.wrap = wrap;
+            updateVcrGlowLight();
+        }
+
+        function updateVcrGlowLight() {
+            if (!vcr.wrap) return;
+            vcr.wrap.style.opacity = state.isLightOn ? VCR_GLOW_LIGHT : VCR_GLOW_DARK;
+        }
+
+        // Видик «работает»: свечение плавно разгорается и неспешно гаснет
+        function pulseVcrGlow(durationMs) {
+            if (!vcr.wrap || reducedMotion) return;
+            const duration = durationMs > 0 ? durationMs : VCR_PULSE_DEFAULT_MS;
+            vcr.glows.forEach((g, i) => {
+                if (typeof g.animate !== 'function') return;
+                const peak = i === 0 ? 0.9 : 0.8;  // часы разгораются чуть сильнее
+                const steps = Math.max(3, Math.round(duration / 400));
+                const frames = [{ opacity: 0.65, transform: 'translate(-50%, -50%) scale(1)' }];
+                for (let s = 1; s < steps; s++) {
+                    const fade = s / steps;
+                    const k = (peak - 0.65) * (1 - fade) * dustRand(0.7, 1);
+                    frames.push({
+                        opacity: (0.65 + k).toFixed(3),
+                        transform: `translate(-50%, -50%) scale(${(1 + k * 0.15).toFixed(3)})`,
+                    });
+                }
+                frames.push({ opacity: 0.65, transform: 'translate(-50%, -50%) scale(1)' });
+                g.animate(frames, { duration, easing: 'ease-in-out' });
+            });
+        }
+
+        // ========== КОШАЧЬЯ ЛАПА ==========
+        // Пока из темноты смотрят глаза, кошка иногда выбрасывает лапу из щели
+        // и бьёт по курсору: лапа вытягивается к нему, делает взмах с выпущенными
+        // когтями и прячется обратно. Слишком близко — кошка всё равно прячется.
+        const PAW_ENABLED = true;
+        const PAW_REACH = 130;              // px, с какого расстояния кошка начинает охоту
+        const PAW_CHANCE = 1.2;             // шансов в секунду, пока курсор в досягаемости
+        const PAW_COOLDOWN = [1500, 3000];  // мс между ударами
+        const PAW_MAX_LENGTH = 110;         // px, как далеко тянется лапа
+        const PAW_FUR = '#2e2823';          // тёмная шерсть
+        const PAW_REACH_MS = 180, PAW_SWIPE_MS = 150, PAW_BACK_MS = 260;
+
+        const paw = {
+            ctx: null, active: false, cooldownUntil: 0,
+            ox: 0, oy: 0, tx: 0, ty: 0, side: 1,
+            lastL: 0, backFrom: -1, backL: 0,
+        };
+
+        function setupCatPaw() {
+            if (!PAW_ENABLED || !cat.wrap) return;
+            const c = document.createElement('canvas');
+            c.id = 'catPaw';
+            cat.wrap.parentNode.insertBefore(c, cat.wrap.nextSibling); // над глазами
+            paw.ctx = setupDustCanvas('catPaw');
+        }
+
+        function maybeSwipePaw(now, dt, dist) {
+            if (!paw.ctx || paw.active || now < paw.cooldownUntil || reducedMotion) return;
+            if (dist > PAW_REACH || dist < CAT_EYES_SHY_RADIUS) return;
+            if (Math.random() >= PAW_CHANCE * dt) return;
+            startPawSwipe();
+        }
+
+        function pawCursor() {
+            const rect = document.getElementById('container').getBoundingClientRect();
+            return { x: cat.mx - rect.left, y: cat.my - rect.top };
+        }
+
+        function startPawSwipe() {
+            paw.active = true;
+            paw.ox = cat.x;                 // лапа — из щели чуть ниже глаз
+            paw.oy = cat.y + 12;
+            paw.side = Math.random() < 0.5 ? -1 : 1;
+            paw.backFrom = -1;
+            const c0 = pawCursor();
+            paw.tx = c0.x; paw.ty = c0.y;
+            const t0 = performance.now();
+
+            const frame = (now) => {
+                const t = now - t0;
+                const leaving = cat.phase !== 'watching'; // свет, постер — сразу убираем лапу
+                if (t < PAW_REACH_MS && !leaving) {
+                    const c = pawCursor();        // пока тянется — целится в курсор
+                    paw.tx = c.x; paw.ty = c.y;
+                }
+                const dx = paw.tx - paw.ox, dy = paw.ty - paw.oy;
+                const maxL = Math.min(PAW_MAX_LENGTH, Math.max(30, Math.hypot(dx, dy) - 8));
+                const ang = Math.atan2(dy, dx);
+                let L, swipe = 0, claws = false;
+
+                if (paw.backFrom < 0 && !leaving && t < PAW_REACH_MS) {
+                    const p = t / PAW_REACH_MS;
+                    L = maxL * (1 - (1 - p) ** 3);                  // резкий выброс
+                } else if (paw.backFrom < 0 && !leaving && t < PAW_REACH_MS + PAW_SWIPE_MS) {
+                    const p = (t - PAW_REACH_MS) / PAW_SWIPE_MS;
+                    L = maxL;
+                    swipe = Math.sin(p * Math.PI) * 0.45 * paw.side; // взмах
+                    claws = true;
+                } else {
+                    if (paw.backFrom < 0) { paw.backFrom = t; paw.backL = paw.lastL; }
+                    const p = (t - paw.backFrom) / (leaving ? PAW_BACK_MS / 2 : PAW_BACK_MS);
+                    if (p >= 1) {
+                        paw.ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+                        paw.active = false;
+                        paw.cooldownUntil = performance.now() + dustRand(PAW_COOLDOWN[0], PAW_COOLDOWN[1]);
+                        return;
+                    }
+                    L = paw.backL * (1 - p * p);                    // прячется
+                }
+                paw.lastL = L;
+                drawPaw(paw.ctx, paw.ox, paw.oy, L, ang + swipe, claws);
+                requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        }
+
+        function drawPaw(ctx, ox, oy, L, ang, claws) {
+            ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+            if (L < 1) return;
+            const TOES = [-4.5, -1.5, 1.5, 4.5];
+            ctx.save();
+            ctx.translate(ox, oy);
+            ctx.rotate(ang);
+
+            // Передняя лапа — выходит из темноты щели
+            const g = ctx.createLinearGradient(0, 0, Math.min(18, L), 0);
+            g.addColorStop(0, 'rgba(46, 40, 35, 0)');
+            g.addColorStop(1, PAW_FUR);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(0, -5); ctx.lineTo(L, -4); ctx.lineTo(L, 4); ctx.lineTo(0, 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Подушка лапы и пальчики
+            ctx.fillStyle = PAW_FUR;
+            ctx.beginPath(); ctx.ellipse(L, 0, 7, 6.5, 0, 0, Math.PI * 2); ctx.fill();
+            for (const y of TOES) {
+                ctx.beginPath(); ctx.arc(L + 5.5, y, 2.3, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // Тёплый блик по контуру, чтобы тёмную лапу было видно в темноте
+            ctx.strokeStyle = 'rgba(255, 215, 170, 0.22)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(Math.min(12, L), -4.8);
+            ctx.lineTo(L - 2, -4.3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(L + 5.5, -4.5, 2.3, Math.PI * 1.1, Math.PI * 1.9);
+            ctx.stroke();
+
+            // При взмахе лапа развёрнута: видны розовые подушечки и когти
+            if (claws) {
+                ctx.fillStyle = 'rgba(170, 105, 110, 0.85)';
+                ctx.beginPath(); ctx.ellipse(L + 0.5, 0, 2.6, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+                for (const y of TOES) {
+                    ctx.beginPath(); ctx.arc(L + 5.5, y, 1.1, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.strokeStyle = 'rgba(235, 228, 215, 0.85)';
+                ctx.lineWidth = 0.7;
+                for (const y of TOES) {
+                    ctx.beginPath();
+                    ctx.moveTo(L + 7.5, y);
+                    ctx.quadraticCurveTo(L + 10, y, L + 10.5, y + 1.2);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // ========== СВЕТ ИЗ ЩЕЛЕЙ В ПОТОЛКЕ ==========
+        // В темноте сверху сквозь щели между половицами пробиваются тонкие
+        // тёплые лучи; в них видно, как плавает пыль. Иногда наверху кто-то
+        // проходит: тень перекрывает лучи, шаги глухо стучат, с потолка сыплется пыль.
+        const BEAMS_ENABLED = true;
+        const BEAM_COUNT = [4, 6];          // сколько щелей
+        const BEAM_ANGLE = 10;              // °, наклон лучей
+        const BEAM_LENGTH = [260, 480];     // px, как далеко достаёт луч
+        const BEAM_WIDTH = [3, 7];          // px, ширина щели у потолка
+        const BEAM_ALPHA = 0.13;            // яркость лучей
+        const BEAM_BLUR = 2;                // px, размытие краёв луча
+        const BEAM_GLOW_WIDTH = 5;          // во сколько раз ореол шире щели
+        const BEAM_COLOR = '255, 205, 140'; // тёплый свет лампы наверху
+        const BEAM_POSTER_DIM = 0.5;        // яркость, пока открыт постер
+        const BEAM_MOTES = 70;              // пылинок, видимых в лучах
+        const STEPS_ENABLED = true;
+        const STEPS_GAP = [20000, 50000];   // мс между попытками
+        const STEPS_CHANCE = 0.6;           // 0..1, шанс, что наверху кто-то пройдёт
+        const STEPS_COUNT = [5, 9];         // шагов за проход
+        const STEP_INTERVAL = 550;          // мс между шагами
+        const STEP_STRIDE = 110;            // px за шаг
+        const STEP_VOLUME = 0.25;           // громкость шагов
+        const STEP_DUST = 10;               // пылинок сыплется с каждого шага
+
+        const ceiling = {
+            ctx: null, beams: [], motes: [], sift: [],
+            mix: 0, cleared: false,
+            walker: null, stepsTimer: 0, noise: null,
+        };
+
+        function setupCeilingLight() {
+            if (!BEAMS_ENABLED) return;
+            const overlay = document.getElementById('overlayContainer');
+            if (!overlay) return;
+            const canvas = document.createElement('canvas');
+            canvas.id = 'ceilingLight';
+            overlay.insertBefore(canvas, overlay.firstChild);
+            ceiling.ctx = setupDustCanvas('ceilingLight');
+            if (!ceiling.ctx) return;
+
+            // Щели раскиданы по ширине неравномерно: по одной на свой участок
+            const W = LAYOUT.CONTAINER_W;
+            const n = Math.round(dustRand(BEAM_COUNT[0], BEAM_COUNT[1]));
+            const tilt = BEAM_ANGLE * Math.PI / 180;
+            for (let i = 0; i < n; i++) {
+                const seg = W / n;
+                ceiling.beams.push({
+                    x0: seg * i + dustRand(0.15, 0.85) * seg,
+                    w: dustRand(BEAM_WIDTH[0], BEAM_WIDTH[1]),
+                    len: dustRand(BEAM_LENGTH[0], BEAM_LENGTH[1]),
+                    tan: Math.tan(tilt), cos: Math.cos(tilt),
+                    ph: dustRand(0, Math.PI * 2), sp: dustRand(0.2, 0.5),
+                    shade: 1,
+                });
+            }
+            ceiling.beams.forEach(b => { b.sprite = buildBeamSprite(b); });
+            for (let i = 0; i < BEAM_MOTES; i++) ceiling.motes.push(spawnBeamMote());
+
+            ceiling.mix = state.isLightOn ? 0 : 1;
+            let last = performance.now();
+            const frame = (now) => {
+                requestAnimationFrame(frame);
+                const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
+                last = now;
+                updateCeilingLight(now, dt);
+            };
+            requestAnimationFrame(frame);
+            if (STEPS_ENABLED) scheduleSteps();
+        }
+
+        // Луч рисуется один раз (с размытием) на свой холст; в кадре меняется
+        // только его яркость — и мягко, и дёшево
+        function buildBeamSprite(b) {
+            const pad = BEAM_BLUR * 3 + 4;
+            const endY = b.len * b.cos;
+            const endX = b.x0 + endY * b.tan;
+            const halo = (b.w / 2) * BEAM_GLOW_WIDTH;
+            const minX = Math.min(b.x0 - halo, endX - halo * 2.5) - pad;
+            const maxX = Math.max(b.x0 + halo, endX + halo * 2.5) + pad;
+            const w = maxX - minX, h = endY + pad;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const c = makeOffscreen(Math.ceil(w * dpr), Math.ceil(h * dpr));
+            const x = c.getContext('2d');
+            x.scale(dpr, dpr);
+            x.translate(-minX, 0);
+            x.globalCompositeOperation = 'lighter';
+            if ('filter' in x) x.filter = `blur(${BEAM_BLUR}px)`;
+
+            // Широкий слабый ореол → средний слой → ядро
+            const layers = [[BEAM_GLOW_WIDTH, 0.25], [BEAM_GLOW_WIDTH * 0.45, 0.45], [1, 0.6]];
+            for (const [widen, a] of layers) {
+                const top = (b.w / 2) * widen, bot = top * 2.5;
+                const I = BEAM_ALPHA * a;
+                const g = x.createLinearGradient(b.x0, 0, endX, endY);
+                g.addColorStop(0, `rgba(${BEAM_COLOR}, ${I.toFixed(3)})`);
+                g.addColorStop(0.35, `rgba(${BEAM_COLOR}, ${(I * 0.5).toFixed(3)})`);
+                g.addColorStop(0.7, `rgba(${BEAM_COLOR}, ${(I * 0.15).toFixed(3)})`);
+                g.addColorStop(1, `rgba(${BEAM_COLOR}, 0)`);
+                x.fillStyle = g;
+                x.beginPath();
+                x.moveTo(b.x0 - top, 0);
+                x.lineTo(b.x0 + top, 0);
+                x.lineTo(endX + bot, endY);
+                x.lineTo(endX - bot, endY);
+                x.closePath();
+                x.fill();
+            }
+            // Сама щель у потолка
+            x.fillStyle = `rgba(${BEAM_COLOR}, ${Math.min(1, BEAM_ALPHA * 1.2).toFixed(3)})`;
+            x.fillRect(b.x0 - b.w / 2, 0, b.w, 1.5);
+            return { canvas: c, x: minX, w, h };
+        }
+
+        // Где луч на высоте y: центр и полуширина (луч слегка расходится книзу)
+        function beamAtY(b, y) {
+            const along = y / b.cos;
+            return { cx: b.x0 + y * b.tan, hw: (b.w / 2) * (1 + 1.5 * along / b.len), k: along / b.len };
+        }
+
+        // Насколько точка освещена лучами (0..1)
+        function beamLightAt(x, y) {
+            let best = 0;
+            for (const b of ceiling.beams) {
+                if (y < 0) continue;
+                const { cx, hw, k } = beamAtY(b, y);
+                if (k >= 1) continue;
+                const d = Math.abs(x - cx) / (hw * 1.6);
+                if (d >= 1) continue;
+                best = Math.max(best, (1 - d) * (1 - k) * b.shade);
+            }
+            return best;
+        }
+
+        function spawnBeamMote() {
+            const b = ceiling.beams[Math.floor(Math.random() * ceiling.beams.length)];
+            const y = dustRand(0, b.len * b.cos * 0.9);
+            const { cx, hw } = beamAtY(b, y);
+            return {
+                x: cx + dustRand(-hw, hw), y,
+                vx: dustRand(-3, 3), vy: dustRand(-3, 3),
+                size: Math.random() < 0.85 ? dustRand(0.5, 1.1) : dustRand(1.2, 1.8),
+                alpha: dustRand(0.5, 1),
+            };
+        }
+
+        function updateCeilingLight(now, dt) {
+            const ctx = ceiling.ctx;
+            const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+            const target = state.isLightOn ? 0 : (state.currentExpandedPoster ? BEAM_POSTER_DIM : 1);
+            ceiling.mix += (target - ceiling.mix) * Math.min(1, dt * 3);
+
+            // Тень идущего наверху перекрывает лучи под ним
+            const w = ceiling.walker;
+            for (const b of ceiling.beams) {
+                let shade = 1;
+                if (w) shade = 1 - 0.85 * Math.exp(-(((b.x0 - w.shadowX) / 45) ** 2));
+                b.shade += (shade - b.shade) * Math.min(1, dt * 8);
+            }
+            if (w) w.shadowX += (w.x - w.shadowX) * Math.min(1, dt * 3);
+
+            // Пыль, сыплющаяся с потолка от шагов
+            ceiling.sift = ceiling.sift.filter(p => now - p.born < p.life);
+            for (const p of ceiling.sift) {
+                applyDraft(p, dt, 1.5);
+                p.vy += 30 * dt;
+                p.vx += dustRand(-1, 1) * 15 * dt - p.vx * 1.5 * dt;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+            }
+
+            if (ceiling.mix < 0.01) {
+                if (!ceiling.cleared) { ctx.clearRect(0, 0, W, H); ceiling.cleared = true; }
+                return;
+            }
+            ceiling.cleared = false;
+            ctx.clearRect(0, 0, W, H);
+            const t = now / 1000;
+
+            // Лучи: готовые размытые картинки, меняется только яркость
+            ctx.globalCompositeOperation = 'lighter';
+            for (const b of ceiling.beams) {
+                const flick = 0.9 + 0.1 * Math.sin(t * b.sp * 2 * Math.PI + b.ph);
+                const k = ceiling.mix * flick * b.shade;
+                if (k < 0.02) continue;
+                ctx.globalAlpha = Math.min(1, k);
+                ctx.drawImage(b.sprite.canvas, b.sprite.x, 0, b.sprite.w, b.sprite.h);
+            }
+            ctx.globalAlpha = 1;
+
+            // Пылинки видны только там, где их ловит луч
+            const drawMote = (p) => {
+                const vis = beamLightAt(p.x, p.y) * ceiling.mix;
+                if (vis < 0.02) return;
+                ctx.globalAlpha = Math.min(1, p.alpha * vis * 1.6);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            ctx.fillStyle = 'rgb(255, 232, 195)';
+            for (let i = 0; i < ceiling.motes.length; i++) {
+                const p = ceiling.motes[i];
+                p.vx += dustRand(-1, 1) * 12 * dt - p.vx * 0.6 * dt;
+                p.vy += (dustRand(-1, 1) * 12 + 1.5) * dt - p.vy * 0.6 * dt; // чуть оседают
+                applyDraft(p, dt, 1.5);
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                // Улетела из лучей — появляется снова в случайном луче
+                if (p.y < -5 || p.y > H || beamLightAt(p.x, p.y) === 0 && Math.random() < dt * 0.5) {
+                    ceiling.motes[i] = spawnBeamMote();
+                    continue;
+                }
+                drawMote(p);
+            }
+            for (const p of ceiling.sift) {
+                const k = (now - p.born) / p.life;
+                const a = p.alpha;
+                p.alpha = a * Math.min(1, (1 - k) * 3);
+                drawMote(p);
+                p.alpha = a;
+            }
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // ---------- Шаги наверху ----------
+        function scheduleSteps() {
+            clearTimeout(ceiling.stepsTimer);
+            ceiling.stepsTimer = setTimeout(() => {
+                if (!ceiling.walker && Math.random() < STEPS_CHANCE) startWalk();
+                scheduleSteps();
+            }, dustRand(STEPS_GAP[0], STEPS_GAP[1]));
+        }
+
+        function startWalk() {
+            const W = LAYOUT.CONTAINER_W;
+            const dir = Math.random() < 0.5 ? -1 : 1;
+            const count = Math.round(dustRand(STEPS_COUNT[0], STEPS_COUNT[1]));
+            // Проход примерно по центру экрана
+            const startX = W / 2 - dir * (count * STEP_STRIDE) / 2 + dustRand(-100, 100);
+            ceiling.walker = { x: startX, shadowX: startX, dir };
+            let left = count;
+            const step = () => {
+                const w = ceiling.walker;
+                if (!w) return;
+                if (left-- <= 0) {
+                    // Ушёл — тень уплывает за край
+                    w.x += w.dir * 400;
+                    setTimeout(() => { ceiling.walker = null; }, 1200);
+                    return;
+                }
+                w.x += w.dir * STEP_STRIDE * dustRand(0.85, 1.15);
+                playStepSound(w.x / W * 2 - 1);
+                for (let i = 0; i < STEP_DUST; i++) {
+                    ceiling.sift.push({
+                        x: w.x + dustRand(-25, 25), y: dustRand(0, 4),
+                        vx: dustRand(-4, 4), vy: dustRand(0, 10),
+                        size: dustRand(0.5, 1.3), alpha: dustRand(0.6, 1),
+                        born: performance.now(), life: dustRand(2500, 4500),
+                    });
+                }
+                setTimeout(step, STEP_INTERVAL * dustRand(0.9, 1.1));
+            };
+            step();
+        }
+
+        // Глухой удар каблука по деревянному полу + короткий шорох доски
+        function playStepSound(pan) {
+            if (!state.audioEnabled || STEP_VOLUME <= 0) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            try {
+                if (!draft.audio) draft.audio = new AC();   // общий аудиоконтекст со сквозняком
+                const ac = draft.audio;
+                if (ac.state === 'suspended') ac.resume();
+                const t0 = ac.currentTime;
+
+                let out = ac.destination;
+                if (ac.createStereoPanner) {
+                    const p = ac.createStereoPanner();
+                    p.pan.value = Math.max(-1, Math.min(1, pan * 0.8));
+                    p.connect(ac.destination);
+                    out = p;
+                }
+
+                const osc = ac.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(dustRand(75, 95), t0);
+                osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.18);
+                const og = ac.createGain();
+                og.gain.setValueAtTime(0.0001, t0);
+                og.gain.exponentialRampToValueAtTime(STEP_VOLUME, t0 + 0.01);
+                og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+                osc.connect(og).connect(out);
+                osc.start(t0);
+                osc.stop(t0 + 0.3);
+
+                if (!ceiling.noise) {
+                    const len = Math.floor(ac.sampleRate * 0.3);
+                    const buf = ac.createBuffer(1, len, ac.sampleRate);
+                    const d = buf.getChannelData(0);
+                    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+                    ceiling.noise = buf;
+                }
+                const src = ac.createBufferSource();
+                src.buffer = ceiling.noise;
+                const lp = ac.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 500;
+                const ng = ac.createGain();
+                ng.gain.setValueAtTime(STEP_VOLUME * 0.35, t0);
+                ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+                src.connect(lp).connect(ng).connect(out);
+                src.start(t0);
+                src.stop(t0 + 0.15);
+            } catch (e) { /* без звука — не страшно */ }
+        }
+
+        function cassetteRectInContainer(cassette) {
+            return {
+                x: cassette.offsetLeft,
+                y: cassette.offsetTop,
+                w: cassette.offsetWidth,
+                h: cassette.offsetHeight,
+            };
+        }
 
         // ========== МЕРЦАНИЕ ==========
         const FLICKER_DURATION = 1500;
@@ -974,6 +3002,7 @@
                 playRandomFlickerSound();
                 startFlickerEffect(FLICKER_DURATION);
             }
+            updateVcrGlowLight();
         }
 
         // ========== ИНИЦИАЛИЗАЦИЯ ==========
@@ -1001,7 +3030,5 @@
             }
         });
     </script>
-</body>
-</html>
 </body>
 </html>
