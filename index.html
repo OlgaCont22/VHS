@@ -396,7 +396,7 @@ const cassettes = [
 { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '2026. БОЕВИК, ФАНТАСТИКА, ТРИЛЛЕР. Кошка сражается с полчищами зомби, пытаясь доставить выжившим людям экспериментальную вакцину от зомби-вируса.' },
 { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg', desc: '2025. УЖАСЫ. Экзорцисты помогают семье, которую преследует сущность из зеркал.' },
 { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg', desc: '1993. ФАНТАСТИКА, ДЕТЕКТИВ, УЖАСЫ. Агенты ФБР сталкиваются со всяким сверхъестественным и не очень.' },
-{ cassette: './images/eden_vhs.jpg', poster: './images/eden_poster.jpg', desc: '2024. ТРИЛЛЕР. Несколько групп европейских переселенцев, сбежавших в 1930-х годах от цивилизации на необитаемый Галапагосский остров ради построения утопии, быстро погружаются в пучину интриг, взаимной ненависти и жестоких убийств.' },
+{ cassette: './images/eden_vhs.JPG', poster: './images/eden_poster2.JPG', desc: '2024. ТРИЛЛЕР. Несколько групп европейских переселенцев, сбежавших в 1930-х годах от цивилизации на необитаемый Галапагосский остров ради построения утопии, быстро погружаются в пучину интриг, взаимной ненависти и жестоких убийств.' },
 { cassette: './images/milk_vhs.jpg', poster: './images/milk_poster.jpg', desc: '2016. ФЭНТЕЗИ, ДРАМА, КОМЕДИЯ. Флегматичный сербский молочник, ежедневно перевозящий провизию через линию фронта, влюбляется в таинственную и прекрасную итальянку, что превращает его жизнь в череду фантастических и опасных приключений.' },
 { cassette: './images/better_vhs.jpg', poster: './images/better_poster.jpg', desc: '2012. ТРИЛЛЕР, ДРАМА, КРИМИНАЛ. Управляющий аукционного дома, влюбляется в загадочную молодую наследницу, что полностью переворачивает его тщательно выстроенную жизнь.' },
 { cassette: './images/unnamed_vhs.png', poster: './images/unnamed_poster.png', posterWidth: 250, desc: 'Странная кассета без обложки и с написанным от руки предупреждением.' },
@@ -426,7 +426,7 @@ const cassettes = [
 { cassette: './images/tapes_vhs.jpg', poster: './images/tapes_poster.jpg', desc: '2007. ТРИЛЛЕР, ДЕТЕКТИВ. Следователи находят в заброшенном доме сотни видеокассет, на которых серийный убийца с садистской точностью и хладнокровием фиксировал похищения, пытки и многолетнее психологическое уничтожение жертв.' },
 { cassette: './images/assault_vhs.jpg', poster: './images/assault_poster.jpg', desc: '2005. БОЕВИК, ТРИЛЛЕР, ДРАМА. Сотрудники полицейского участка и запертые в нём заключённые вынуждены объединиться ради выживания, когда здание штурмует до зубов вооружённый отряд коррумпированных копов, пытающихся ликвидировать важного свидетеля.' },
 { cassette: './images/topi_vhs.jpg', poster: './images/topi_poster.jpg', desc: '2021. ТРИЛЛЕР, МИСТИКА, ДРАМА. Пятеро молодых москвичей приехали в полузаброшенную деревню Топи, где столкнулись с чередой пугающих аномалий и мистических событий, которые заставляют усомниться в реальности происходящего.' },
-{ cassette: './images/shark_vhs.jpg', poster: './images/shark_poster.jpg', desc: '2026. УЖАСЫ, ТРИЛЛЕР. Компания друзей во время отдыха в Таиланде оказывается заперта в затопленной системе подводных пещер, где им приходится столкнуться с прожорливой бычьей акулой.' },
+{ cassette: './images/shark_vhs.jpg', poster: './images/shark_poster2.jpg', desc: '2026. УЖАСЫ, ТРИЛЛЕР. Компания друзей во время отдыха в Таиланде оказывается заперта в затопленной системе подводных пещер, где им приходится столкнуться с прожорливой бычьей акулой.' },
 { cassette: './images/9_vhs.jpg', poster: './images/9_poster.jpg', desc: '2009. ФАНТАСТИКА, ТРИЛЛЕР, БОЕВИК. Инопланетные беженцы годами выживают в изолированных городских трущобах, сталкиваясь с жестокостью и принудительным выселением со стороны людей. Всё меняется, когда обычный чиновник подхватывает внеземной вирус и превращается в единственную зацепку для раскрытия тайн чужаков.' },
 { cassette: './images/deal_vhs.JPG', poster: './images/deal_poster2.JPG', desc: '2026. ТРИЛЛЕР, КРИМИНАЛ. Зажатый в угол федералами криминальный авторитет планирует инсценировать собственную смерть ради 30 миллионов долларов страховки, не подозревая, что его жена замышляет убить его по-настоящему.' },
 { cassette: './images/train_vhs.JPG', poster: './images/train_poster.JPG', desc: '2025. ДРАМА. История о простом рабочем Роберте Грейниере, который теряет жену и дочь в страшном лесном пожаре на американском Северо-Западе начала XX века. Оставшись в одиночестве среди дикой природы, он ищет утешение в тяжелом труде, пока вокруг него стремительно меняется и уходит в прошлое целая эпоха.' },
@@ -1147,12 +1147,13 @@ if (lean) parts.push(`rotate(${lean}deg)`);
 const full = parts.length ? parts.join(' ') : 'none';
 cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
 }
+// ---------- Покосившиеся кассеты ----------
 const LEAN_ENABLED = true;
-const LEAN_INTO_GAP = true;
-const LEAN_GAP_ANGLE = [7, 11];
-const LEAN_RANDOM_COUNT = [1, 2];
-const LEAN_RANDOM_ANGLE = [1.2, 1.8];
-const LEAN_STRAIGHTEN_MS = 450;
+const LEAN_INTO_GAP = false;           // последняя в ряду НЕ заваливается в пустое место
+const LEAN_GAP_ANGLE = [7, 11];        // °, наклон в пустоту (не используется при LEAN_INTO_GAP = false)
+const LEAN_RANDOM_COUNT = [1, 2];      // сколько случайных кассет чуть покосились
+const LEAN_RANDOM_ANGLE = [1.2, 1.8];  // °, упираются в соседа (зазор между кассетами 6px)
+const LEAN_STRAIGHTEN_MS = 450;        // как долго выпрямляется
 function leanCassette(cassette, deg) {
 if (!cassette || !deg) return;
 cassette.dataset.lean = deg.toFixed(2);
@@ -1164,10 +1165,12 @@ function setupLeaningCassettes(total) {
 if (!LEAN_ENABLED || total < 2) return;
 const byIndex = (i) => document.getElementById(`cassette${i + 1}`);
 const leaned = new Set();
+// Последняя кассета, если ряд не заполнен, — наклон вправо, в пустоту (отключено)
 if (LEAN_INTO_GAP && total % GRID.COLS !== 0 && total < GRID.COLS * GRID.ROWS) {
 leanCassette(byIndex(total - 1), dustRand(LEAN_GAP_ANGLE[0], LEAN_GAP_ANGLE[1]));
 leaned.add(total - 1);
 }
+// Пара случайных — чуть-чуть, в сторону существующего соседа по ряду
 const count = Math.round(dustRand(LEAN_RANDOM_COUNT[0], LEAN_RANDOM_COUNT[1]));
 for (let n = 0, tries = 0; n < count && tries < 50; tries++) {
 const i = Math.floor(Math.random() * total);
@@ -1492,9 +1495,9 @@ const VCR_GLOW_DARK = 1;
 const VCR_GLOW_LIGHT = 0.2;
 const VCR_PULSE_DEFAULT_MS = 1500;
 const VCR_LIGHTS = [
-{ x: 618, y: 542, w: 360, h: 150, color: '255, 50, 40',  alpha: 0.3 },
-{ x: 447, y: 548, w: 120, h: 80,  color: '80, 110, 255', alpha: 0.28 },
-{ x: 886, y: 540, w: 100, h: 70,  color: '80, 255, 120', alpha: 0.2 },
+{ x: 618, y: 552, w: 200, h: 80, color: '255, 50, 40',  alpha: 0.4 },
+{ x: 447, y: 548, w: 100, h: 80,  color: '80, 110, 255', alpha: 0.2 },
+{ x: 886, y: 540, w: 50, h: 50,  color: '80, 255, 120', alpha: 0.15 },
 ];
 const vcr = { wrap: null, glows: [] };
 function setupVcrGlow() {
