@@ -396,6 +396,7 @@ const cassettes = [
 { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '2026. БОЕВИК, ФАНТАСТИКА, ТРИЛЛЕР. Кошка сражается с полчищами зомби, пытаясь доставить выжившим людям экспериментальную вакцину от зомби-вируса.' },
 { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg', desc: '2025. УЖАСЫ. Экзорцисты помогают семье, которую преследует сущность из зеркал.' },
 { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg', desc: '1993. ФАНТАСТИКА, ДЕТЕКТИВ, УЖАСЫ. Агенты ФБР сталкиваются со всяким сверхъестественным и не очень.' },
+{ cassette: './images/eden_vhs.jpg', poster: './images/eden_poster.jpg', desc: '2024. ТРИЛЛЕР. Несколько групп европейских переселенцев, сбежавших в 1930-х годах от цивилизации на необитаемый Галапагосский остров ради построения утопии, быстро погружаются в пучину интриг, взаимной ненависти и жестоких убийств.' },
 { cassette: './images/milk_vhs.jpg', poster: './images/milk_poster.jpg', desc: '2016. ФЭНТЕЗИ, ДРАМА, КОМЕДИЯ. Флегматичный сербский молочник, ежедневно перевозящий провизию через линию фронта, влюбляется в таинственную и прекрасную итальянку, что превращает его жизнь в череду фантастических и опасных приключений.' },
 { cassette: './images/better_vhs.jpg', poster: './images/better_poster.jpg', desc: '2012. ТРИЛЛЕР, ДРАМА, КРИМИНАЛ. Управляющий аукционного дома, влюбляется в загадочную молодую наследницу, что полностью переворачивает его тщательно выстроенную жизнь.' },
 { cassette: './images/unnamed_vhs.png', poster: './images/unnamed_poster.png', posterWidth: 250, desc: 'Странная кассета без обложки и с написанным от руки предупреждением.' },
@@ -425,7 +426,7 @@ const cassettes = [
 { cassette: './images/tapes_vhs.jpg', poster: './images/tapes_poster.jpg', desc: '2007. ТРИЛЛЕР, ДЕТЕКТИВ. Следователи находят в заброшенном доме сотни видеокассет, на которых серийный убийца с садистской точностью и хладнокровием фиксировал похищения, пытки и многолетнее психологическое уничтожение жертв.' },
 { cassette: './images/assault_vhs.jpg', poster: './images/assault_poster.jpg', desc: '2005. БОЕВИК, ТРИЛЛЕР, ДРАМА. Сотрудники полицейского участка и запертые в нём заключённые вынуждены объединиться ради выживания, когда здание штурмует до зубов вооружённый отряд коррумпированных копов, пытающихся ликвидировать важного свидетеля.' },
 { cassette: './images/topi_vhs.jpg', poster: './images/topi_poster.jpg', desc: '2021. ТРИЛЛЕР, МИСТИКА, ДРАМА. Пятеро молодых москвичей приехали в полузаброшенную деревню Топи, где столкнулись с чередой пугающих аномалий и мистических событий, которые заставляют усомниться в реальности происходящего.' },
-{ cassette: './images/shark_vhs.jpg', poster: './images/shark_poster2.jpg', desc: '2026. УЖАСЫ, ТРИЛЛЕР. Компания друзей во время отдыха в Таиланде оказывается заперта в затопленной системе подводных пещер, где им приходится столкнуться с прожорливой бычьей акулой.' },
+{ cassette: './images/shark_vhs.jpg', poster: './images/shark_poster.jpg', desc: '2026. УЖАСЫ, ТРИЛЛЕР. Компания друзей во время отдыха в Таиланде оказывается заперта в затопленной системе подводных пещер, где им приходится столкнуться с прожорливой бычьей акулой.' },
 { cassette: './images/9_vhs.jpg', poster: './images/9_poster.jpg', desc: '2009. ФАНТАСТИКА, ТРИЛЛЕР, БОЕВИК. Инопланетные беженцы годами выживают в изолированных городских трущобах, сталкиваясь с жестокостью и принудительным выселением со стороны людей. Всё меняется, когда обычный чиновник подхватывает внеземной вирус и превращается в единственную зацепку для раскрытия тайн чужаков.' },
 { cassette: './images/deal_vhs.JPG', poster: './images/deal_poster2.JPG', desc: '2026. ТРИЛЛЕР, КРИМИНАЛ. Зажатый в угол федералами криминальный авторитет планирует инсценировать собственную смерть ради 30 миллионов долларов страховки, не подозревая, что его жена замышляет убить его по-настоящему.' },
 { cassette: './images/train_vhs.JPG', poster: './images/train_poster.JPG', desc: '2025. ДРАМА. История о простом рабочем Роберте Грейниере, который теряет жену и дочь в страшном лесном пожаре на американском Северо-Западе начала XX века. Оставшись в одиночестве среди дикой природы, он ищет утешение в тяжелом труде, пока вокруг него стремительно меняется и уходит в прошлое целая эпоха.' },
@@ -1568,12 +1569,11 @@ const STEPS_CHANCE = 0.6;
 const STEPS_COUNT = [5, 9];
 const STEP_INTERVAL = 550;
 const STEP_STRIDE = 110;
-const STEP_VOLUME = 0.25;
 const STEP_DUST = 10;
 const ceiling = {
 ctx: null, beams: [], motes: [], sift: [],
 mix: 0, cleared: false,
-walker: null, stepsTimer: 0, noise: null,
+walker: null, stepsTimer: 0,
 };
 function setupCeilingLight() {
 if (!BEAMS_ENABLED) return;
@@ -1595,7 +1595,6 @@ w: dustRand(BEAM_WIDTH[0], BEAM_WIDTH[1]),
 len: dustRand(BEAM_LENGTH[0], BEAM_LENGTH[1]),
 tan: Math.tan(tilt), cos: Math.cos(tilt),
 ph: dustRand(0, Math.PI * 2), sp: dustRand(0.2, 0.5),
-shade: 1,
 });
 }
 ceiling.beams.forEach(b => { b.sprite = buildBeamSprite(b); });
@@ -1662,7 +1661,7 @@ const { cx, hw, k } = beamAtY(b, y);
 if (k >= 1) continue;
 const d = Math.abs(x - cx) / (hw * 1.6);
 if (d >= 1) continue;
-best = Math.max(best, (1 - d) * (1 - k) * b.shade);
+best = Math.max(best, (1 - d) * (1 - k));
 }
 return best;
 }
@@ -1682,13 +1681,6 @@ const ctx = ceiling.ctx;
 const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
 const target = state.isLightOn ? 0 : (state.currentExpandedPoster ? BEAM_POSTER_DIM : 1);
 ceiling.mix += (target - ceiling.mix) * Math.min(1, dt * 3);
-const w = ceiling.walker;
-for (const b of ceiling.beams) {
-let shade = 1;
-if (w) shade = 1 - 0.85 * Math.exp(-(((b.x0 - w.shadowX) / 45) ** 2));
-b.shade += (shade - b.shade) * Math.min(1, dt * 8);
-}
-if (w) w.shadowX += (w.x - w.shadowX) * Math.min(1, dt * 3);
 ceiling.sift = ceiling.sift.filter(p => now - p.born < p.life);
 for (const p of ceiling.sift) {
 applyDraft(p, dt, 1.5);
@@ -1707,7 +1699,7 @@ const t = now / 1000;
 ctx.globalCompositeOperation = 'lighter';
 for (const b of ceiling.beams) {
 const flick = 0.9 + 0.1 * Math.sin(t * b.sp * 2 * Math.PI + b.ph);
-const k = ceiling.mix * flick * b.shade;
+const k = ceiling.mix * flick;
 if (k < 0.02) continue;
 ctx.globalAlpha = Math.min(1, k);
 ctx.drawImage(b.sprite.canvas, b.sprite.x, 0, b.sprite.w, b.sprite.h);
@@ -1757,7 +1749,7 @@ const W = LAYOUT.CONTAINER_W;
 const dir = Math.random() < 0.5 ? -1 : 1;
 const count = Math.round(dustRand(STEPS_COUNT[0], STEPS_COUNT[1]));
 const startX = W / 2 - dir * (count * STEP_STRIDE) / 2 + dustRand(-100, 100);
-ceiling.walker = { x: startX, shadowX: startX, dir };
+ceiling.walker = { x: startX, dir };
 let left = count;
 const step = () => {
 const w = ceiling.walker;
@@ -1768,7 +1760,6 @@ setTimeout(() => { ceiling.walker = null; }, 1200);
 return;
 }
 w.x += w.dir * STEP_STRIDE * dustRand(0.85, 1.15);
-playStepSound(w.x / W * 2 - 1);
 for (let i = 0; i < STEP_DUST; i++) {
 ceiling.sift.push({
 x: w.x + dustRand(-25, 25), y: dustRand(0, 4),
@@ -1780,53 +1771,6 @@ born: performance.now(), life: dustRand(2500, 4500),
 setTimeout(step, STEP_INTERVAL * dustRand(0.9, 1.1));
 };
 step();
-}
-function playStepSound(pan) {
-if (!state.audioEnabled || STEP_VOLUME <= 0) return;
-const AC = window.AudioContext || window.webkitAudioContext;
-if (!AC) return;
-try {
-if (!draft.audio) draft.audio = new AC();
-const ac = draft.audio;
-if (ac.state === 'suspended') ac.resume();
-const t0 = ac.currentTime;
-let out = ac.destination;
-if (ac.createStereoPanner) {
-const p = ac.createStereoPanner();
-p.pan.value = Math.max(-1, Math.min(1, pan * 0.8));
-p.connect(ac.destination);
-out = p;
-}
-const osc = ac.createOscillator();
-osc.type = 'sine';
-osc.frequency.setValueAtTime(dustRand(75, 95), t0);
-osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.18);
-const og = ac.createGain();
-og.gain.setValueAtTime(0.0001, t0);
-og.gain.exponentialRampToValueAtTime(STEP_VOLUME, t0 + 0.01);
-og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-osc.connect(og).connect(out);
-osc.start(t0);
-osc.stop(t0 + 0.3);
-if (!ceiling.noise) {
-const len = Math.floor(ac.sampleRate * 0.3);
-const buf = ac.createBuffer(1, len, ac.sampleRate);
-const d = buf.getChannelData(0);
-for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-ceiling.noise = buf;
-}
-const src = ac.createBufferSource();
-src.buffer = ceiling.noise;
-const lp = ac.createBiquadFilter();
-lp.type = 'lowpass';
-lp.frequency.value = 500;
-const ng = ac.createGain();
-ng.gain.setValueAtTime(STEP_VOLUME * 0.35, t0);
-ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
-src.connect(lp).connect(ng).connect(out);
-src.start(t0);
-src.stop(t0 + 0.15);
-} catch (e) { /* без звука — не страшно */ }
 }
 function cassetteRectInContainer(cassette) {
 return {
