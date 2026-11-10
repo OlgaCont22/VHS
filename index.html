@@ -1315,9 +1315,7 @@ state.flickerGeneration++; stopFlickerSounds();
 scene.style.transition = ''; scene.style.filter = 'brightness(0.15)';
 lightSwitch.src = LIGHT_SWITCH_SRC.off; overlayImage.style.opacity = '1';
 state.isLightOn = false;
-clearTimeout(mothFly.timer);
-mothFly.active = false;
-if (mothFly.ctx) mothFly.ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+clearTimeout(mothFly.timer); // Отменяем только запланированный вылет, но не прерываем текущий полёт
 } else {
 scene.style.filter = 'brightness(1)';
 lightSwitch.src = LIGHT_SWITCH_SRC.on; overlayImage.style.opacity = '0.5';
@@ -1342,212 +1340,209 @@ const MOTH_SCARE_RADIUS = 80;
 const MOTH_FLEE_SPEED = 600;
 
 const mothFly = {
-    ctx: null, active: false, timer: null, path: [], progress: 0, speed: 0,
-    flap: 0, heading: 0, x: 0, y: 0, prevX: null, prevY: null, wigglePhase: 0,
-    isFleeing: false, fleeVx: 0, fleeVy: 0, mouseX: -1000, mouseY: -1000
+ctx: null, active: false, timer: null, path: [], progress: 0, speed: 0,
+flap: 0, heading: 0, x: 0, y: 0, prevX: null, prevY: null, wigglePhase: 0,
+isFleeing: false, fleeVx: 0, fleeVy: 0, mouseX: -1000, mouseY: -1000
 };
 
 function setupFlyingMoth() {
-    if (!MOTH_FLY_ENABLED) return;
-    mothFly.ctx = setupDustCanvas('mothFly');
-    if (!mothFly.ctx) return;
+if (!MOTH_FLY_ENABLED) return;
+mothFly.ctx = setupDustCanvas('mothFly');
+if (!mothFly.ctx) return;
 }
 
 function scheduleMothFly() {
-    clearTimeout(mothFly.timer);
-    if (!state.isLightOn || mothFly.active) return;
-    const delay = dustRand(MOTH_FLY_DELAY_MIN, MOTH_FLY_DELAY_MAX);
-    mothFly.timer = setTimeout(startMothFlySequence, delay);
+clearTimeout(mothFly.timer);
+if (!state.isLightOn || mothFly.active) return;
+const delay = dustRand(MOTH_FLY_DELAY_MIN, MOTH_FLY_DELAY_MAX);
+mothFly.timer = setTimeout(startMothFlySequence, delay);
 }
 
 function startMothFlySequence() {
-    if (!state.isLightOn) { scheduleMothFly(); return; }
-    generateMothPath();
-    mothFly.active = true;
-    mothFly.progress = 0;
-    mothFly.flap = 0;
-    mothFly.wigglePhase = 0;
-    mothFly.isFleeing = false;
-    mothFly.fleeVx = 0;
-    mothFly.fleeVy = 0;
-    
-    // Инициализируем начальные координаты, чтобы не было мгновенного испуга при спавне
-    const p0 = mothFly.path[0];
-    mothFly.x = p0.x;
-    mothFly.y = p0.y;
-    mothFly.prevX = p0.x;
-    mothFly.prevY = p0.y;
+if (!state.isLightOn) { scheduleMothFly(); return; }
+generateMothPath();
+mothFly.active = true;
+mothFly.progress = 0;
+mothFly.flap = 0;
+mothFly.wigglePhase = 0;
+mothFly.isFleeing = false;
+mothFly.fleeVx = 0;
+mothFly.fleeVy = 0;
 
-    const ctx = mothFly.ctx;
-    let last = performance.now();
+const p0 = mothFly.path[0];
+mothFly.x = p0.x;
+mothFly.y = p0.y;
+mothFly.prevX = p0.x;
+mothFly.prevY = p0.y;
 
-    const frame = (now) => {
-        if (!mothFly.active) return;
-        const dt = Math.min((now - last) / 1000, 0.05);
-        last = now;
+const ctx = mothFly.ctx;
+let last = performance.now();
 
-        ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
-        
-        // При панике крылья машут гораздо быстрее
-        mothFly.flap += dt * Math.PI * 2 * (mothFly.isFleeing ? 30 : 14);
+const frame = (now) => {
+if (!mothFly.active) return;
+const dt = Math.min((now - last) / 1000, 0.05);
+last = now;
 
-        if (!mothFly.isFleeing) {
-            mothFly.progress += dt * mothFly.speed;
-            mothFly.wigglePhase += dt * 3.5;
+ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
 
-            // Проверка на приближение курсора (даём небольшую задержку progress > 0.05, чтобы мотылёк успел появиться)
-            if (mothFly.progress > 0.05) {
-                const dist = Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY);
-                if (dist < MOTH_SCARE_RADIUS) {
-                    mothFly.isFleeing = true;
-                    // Вектор ОТ курсора
-                    const dx = mothFly.x - mothFly.mouseX;
-                    const dy = mothFly.y - mothFly.mouseY;
-                    const len = Math.hypot(dx, dy) || 1;
-                    mothFly.fleeVx = (dx / len) * MOTH_FLEE_SPEED;
-                    mothFly.fleeVy = (dy / len) * MOTH_FLEE_SPEED;
-                    
-                    // Разворачиваем мотылька в сторону побега
-                    const target = Math.atan2(mothFly.fleeVy, mothFly.fleeVx) + Math.PI / 2;
-                    mothFly.heading = target;
-                }
-            }
+mothFly.flap += dt * Math.PI * 2 * (mothFly.isFleeing ? 30 : 14);
 
-            if (mothFly.progress >= 1) {
-                mothFly.active = false;
-                ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
-                const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
-                mothFly.timer = setTimeout(scheduleMothFly, cooldown);
-                return;
-            }
+if (!mothFly.isFleeing) {
+mothFly.progress += dt * mothFly.speed;
+mothFly.wigglePhase += dt * 3.5;
 
-            // Обычная траектория
-            const t = mothFly.progress;
-            const p0 = mothFly.path[0], p1 = mothFly.path[1], p2 = mothFly.path[2], p3 = mothFly.path[3];
-            let x = Math.pow(1-t,3)*p0.x + 3*Math.pow(1-t,2)*t*p1.x + 3*(1-t)*Math.pow(t,2)*p2.x + Math.pow(t,3)*p3.x;
-            let y = Math.pow(1-t,3)*p0.y + 3*Math.pow(1-t,2)*t*p1.y + 3*(1-t)*Math.pow(t,2)*p2.y + Math.pow(t,3)*p3.y;
+if (mothFly.progress > 0.05) {
+const dist = Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY);
+if (dist < MOTH_SCARE_RADIUS) {
+mothFly.isFleeing = true;
+const dx = mothFly.x - mothFly.mouseX;
+const dy = mothFly.y - mothFly.mouseY;
+const len = Math.hypot(dx, dy) || 1;
+mothFly.fleeVx = (dx / len) * MOTH_FLEE_SPEED;
+mothFly.fleeVy = (dy / len) * MOTH_FLEE_SPEED;
+const target = Math.atan2(mothFly.fleeVy, mothFly.fleeVx) + Math.PI / 2;
+mothFly.heading = target;
+}
+}
 
-            const wiggleX = Math.sin(mothFly.wigglePhase * 1.5) * 15 + Math.sin(mothFly.wigglePhase * 2.8) * 8;
-            const wiggleY = Math.cos(mothFly.wigglePhase * 1.2) * 12 + Math.cos(mothFly.wigglePhase * 2.3) * 6;
-            x += wiggleX;
-            y += wiggleY;
+if (mothFly.progress >= 1) {
+mothFly.active = false;
+ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+// ПЛАНИРУЕМ СЛЕДУЮЩИЙ ВЫЛЕТ ТОЛЬКО ЕСЛИ СВЕТ ВКЛЮЧЕН
+if (state.isLightOn) {
+const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
+mothFly.timer = setTimeout(scheduleMothFly, cooldown);
+}
+return;
+}
 
-            if (mothFly.prevX !== null && mothFly.prevY !== null) {
-                const dx = x - mothFly.prevX;
-                const dy = y - mothFly.prevY;
-                if (Math.hypot(dx, dy) > 0.5) {
-                    const target = Math.atan2(dy, dx) + Math.PI / 2;
-                    let diff = target - mothFly.heading;
-                    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                    mothFly.heading += diff * Math.min(1, dt * 6);
-                }
-            }
-            
-            mothFly.prevX = x;
-            mothFly.prevY = y;
-            mothFly.x = x;
-            mothFly.y = y;
-        } else {
-            // Логика побега
-            mothFly.x += mothFly.fleeVx * dt;
-            mothFly.y += mothFly.fleeVy * dt;
+const t = mothFly.progress;
+const p0 = mothFly.path[0], p1 = mothFly.path[1], p2 = mothFly.path[2], p3 = mothFly.path[3];
+let x = Math.pow(1-t,3)*p0.x + 3*Math.pow(1-t,2)*t*p1.x + 3*(1-t)*Math.pow(t,2)*p2.x + Math.pow(t,3)*p3.x;
+let y = Math.pow(1-t,3)*p0.y + 3*Math.pow(1-t,2)*t*p1.y + 3*(1-t)*Math.pow(t,2)*p2.y + Math.pow(t,3)*p3.y;
 
-            // Если улетел далеко за пределы экрана, завершаем полёт
-            if (mothFly.x < -150 || mothFly.x > LAYOUT.CONTAINER_W + 150 || 
-                mothFly.y < -150 || mothFly.y > LAYOUT.CONTAINER_H + 150) {
-                mothFly.active = false;
-                ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
-                const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
-                mothFly.timer = setTimeout(scheduleMothFly, cooldown);
-                return;
-            }
-        }
+const wiggleX = Math.sin(mothFly.wigglePhase * 1.5) * 15 + Math.sin(mothFly.wigglePhase * 2.8) * 8;
+const wiggleY = Math.cos(mothFly.wigglePhase * 1.2) * 12 + Math.cos(mothFly.wigglePhase * 2.3) * 6;
+x += wiggleX;
+y += wiggleY;
 
-        const open = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(mothFly.flap));
+if (mothFly.prevX !== null && mothFly.prevY !== null) {
+const dx = x - mothFly.prevX;
+const dy = y - mothFly.prevY;
+if (Math.hypot(dx, dy) > 0.5) {
+const target = Math.atan2(dy, dx) + Math.PI / 2;
+let diff = target - mothFly.heading;
+diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+mothFly.heading += diff * Math.min(1, dt * 6);
+}
+}
 
-        if (MOTH_FLY_SHADOW > 0) {
-            const sx = mothFly.x + 18;
-            const sy = mothFly.y + 22;
-            ctx.globalAlpha = MOTH_FLY_SHADOW;
-            ctx.filter = 'blur(2px)';
-            drawMothShape(ctx, sx, sy, mothFly.heading, open, MOTH_FLY_SCALE * 1.6, MOTH_FLY_SHADOW_COLORS);
-            ctx.filter = 'none';
-            ctx.globalAlpha = 1;
-        }
+mothFly.prevX = x;
+mothFly.prevY = y;
+mothFly.x = x;
+mothFly.y = y;
+} else {
+mothFly.x += mothFly.fleeVx * dt;
+mothFly.y += mothFly.fleeVy * dt;
 
-        ctx.globalAlpha = 1;
-        drawMothShape(ctx, mothFly.x, mothFly.y, mothFly.heading, open, MOTH_FLY_SCALE, MOTH_FLY_COLORS);
+if (mothFly.x < -150 || mothFly.x > LAYOUT.CONTAINER_W + 150 ||
+mothFly.y < -150 || mothFly.y > LAYOUT.CONTAINER_H + 150) {
+mothFly.active = false;
+ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+// ПЛАНИРУЕМ СЛЕДУЮЩИЙ ВЫЛЕТ ТОЛЬКО ЕСЛИ СВЕТ ВКЛЮЧЕН
+if (state.isLightOn) {
+const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
+mothFly.timer = setTimeout(scheduleMothFly, cooldown);
+}
+return;
+}
+}
 
-        requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
+const open = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(mothFly.flap));
+
+if (MOTH_FLY_SHADOW > 0) {
+const sx = mothFly.x + 18;
+const sy = mothFly.y + 22;
+ctx.globalAlpha = MOTH_FLY_SHADOW;
+ctx.filter = 'blur(2px)';
+drawMothShape(ctx, sx, sy, mothFly.heading, open, MOTH_FLY_SCALE * 1.6, MOTH_FLY_SHADOW_COLORS);
+ctx.filter = 'none';
+ctx.globalAlpha = 1;
+}
+
+ctx.globalAlpha = 1;
+drawMothShape(ctx, mothFly.x, mothFly.y, mothFly.heading, open, MOTH_FLY_SCALE, MOTH_FLY_COLORS);
+
+requestAnimationFrame(frame);
+};
+requestAnimationFrame(frame);
 }
 
 function generateMothPath() {
-    const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
-    const margin = 80;
-    const sides = ['left', 'right', 'top', 'bottom'];
-    const entrySide = sides[Math.floor(Math.random() * sides.length)];
-    let exitSide = sides[Math.floor(Math.random() * sides.length)];
-    while (exitSide === entrySide) exitSide = sides[Math.floor(Math.random() * sides.length)];
+const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+const margin = 80;
+const sides = ['left', 'right', 'top', 'bottom'];
+const entrySide = sides[Math.floor(Math.random() * sides.length)];
+let exitSide = sides[Math.floor(Math.random() * sides.length)];
+while (exitSide === entrySide) exitSide = sides[Math.floor(Math.random() * sides.length)];
 
-    const getPoint = (side) => {
-        let x, y;
-        if (side === 'left') { x = -margin; y = dustRand(margin, H - margin); }
-        else if (side === 'right') { x = W + margin; y = dustRand(margin, H - margin); }
-        else if (side === 'top') { x = dustRand(margin, W - margin); y = -margin; }
-        else { x = dustRand(margin, W - margin); y = H + margin; }
-        return { x, y };
-    };
+const getPoint = (side) => {
+let x, y;
+if (side === 'left') { x = -margin; y = dustRand(margin, H - margin); }
+else if (side === 'right') { x = W + margin; y = dustRand(margin, H - margin); }
+else if (side === 'top') { x = dustRand(margin, W - margin); y = -margin; }
+else { x = dustRand(margin, W - margin); y = H + margin; }
+return { x, y };
+};
 
-    const start = getPoint(entrySide);
-    const end = getPoint(exitSide);
+const start = getPoint(entrySide);
+const end = getPoint(exitSide);
 
-    const midX = (start.x + end.x) / 2 + dustRand(-250, 250);
-    const midY = (start.y + end.y) / 2 + dustRand(-180, 180);
-    const cp1 = { x: start.x + (midX - start.x) * dustRand(0.4, 0.7), y: start.y + (midY - start.y) * dustRand(0.4, 0.7) };
-    const cp2 = { x: end.x + (midX - end.x) * dustRand(0.4, 0.7), y: end.y + (midY - end.y) * dustRand(0.4, 0.7) };
+const midX = (start.x + end.x) / 2 + dustRand(-250, 250);
+const midY = (start.y + end.y) / 2 + dustRand(-180, 180);
+const cp1 = { x: start.x + (midX - start.x) * dustRand(0.4, 0.7), y: start.y + (midY - start.y) * dustRand(0.4, 0.7) };
+const cp2 = { x: end.x + (midX - end.x) * dustRand(0.4, 0.7), y: end.y + (midY - end.y) * dustRand(0.4, 0.7) };
 
-    mothFly.path = [start, cp1, cp2, end];
-    const duration = dustRand(5, 8);
-    mothFly.speed = 1 / duration;
+mothFly.path = [start, cp1, cp2, end];
+const duration = dustRand(5, 8);
+mothFly.speed = 1 / duration;
 }
 
 function drawMothShape(ctx, x, y, heading, open, scale, colors) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(heading);
-    ctx.scale(scale, scale);
+ctx.save();
+ctx.translate(x, y);
+ctx.rotate(heading);
+ctx.scale(scale, scale);
 
-    for (const s of [-1, 1]) {
-        ctx.fillStyle = colors.fore;
-        ctx.beginPath();
-        ctx.moveTo(0, -1.5);
-        ctx.quadraticCurveTo(s * 7 * open, -5, s * 8.5 * open, 1);
-        ctx.quadraticCurveTo(s * 4 * open, 2.5, 0, 1.5);
-        ctx.fill();
+for (const s of [-1, 1]) {
+ctx.fillStyle = colors.fore;
+ctx.beginPath();
+ctx.moveTo(0, -1.5);
+ctx.quadraticCurveTo(s * 7 * open, -5, s * 8.5 * open, 1);
+ctx.quadraticCurveTo(s * 4 * open, 2.5, 0, 1.5);
+ctx.fill();
 
-        ctx.fillStyle = colors.hind;
-        ctx.beginPath();
-        ctx.moveTo(0, 0.5);
-        ctx.quadraticCurveTo(s * 5.5 * open, 1.5, s * 4.5 * open, 5);
-        ctx.quadraticCurveTo(s * 2 * open, 5.5, 0, 3.5);
-        ctx.fill();
-    }
+ctx.fillStyle = colors.hind;
+ctx.beginPath();
+ctx.moveTo(0, 0.5);
+ctx.quadraticCurveTo(s * 5.5 * open, 1.5, s * 4.5 * open, 5);
+ctx.quadraticCurveTo(s * 2 * open, 5.5, 0, 3.5);
+ctx.fill();
+}
 
-    ctx.fillStyle = colors.body;
-    ctx.beginPath();
-    ctx.ellipse(0, 1, 1.1, 3.8, 0, 0, Math.PI * 2);
-    ctx.fill();
+ctx.fillStyle = colors.body;
+ctx.beginPath();
+ctx.ellipse(0, 1, 1.1, 3.8, 0, 0, Math.PI * 2);
+ctx.fill();
 
-    ctx.strokeStyle = colors.body;
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(-0.4, -2.5); ctx.quadraticCurveTo(-1.5, -4.5, -2.5, -5);
-    ctx.moveTo(0.4, -2.5);  ctx.quadraticCurveTo(1.5, -4.5, 2.5, -5);
-    ctx.stroke();
+ctx.strokeStyle = colors.body;
+ctx.lineWidth = 0.5;
+ctx.beginPath();
+ctx.moveTo(-0.4, -2.5); ctx.quadraticCurveTo(-1.5, -4.5, -2.5, -5);
+ctx.moveTo(0.4, -2.5);  ctx.quadraticCurveTo(1.5, -4.5, 2.5, -5);
+ctx.stroke();
 
-    ctx.restore();
+ctx.restore();
 }
 
 async function initialize() {
