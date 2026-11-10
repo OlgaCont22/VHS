@@ -51,6 +51,7 @@ background-repeat: no-repeat;
 background-position: center 2px;
 position: relative;
 overflow: hidden;
+z-index: 0;
 }
 .overlay-container {
 position: absolute;
@@ -117,7 +118,6 @@ display: block;
 .vhs-poster.expanding {
 transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-/* ========== ОКОШКО С ОПИСАНИЕМ ФИЛЬМА ========== */
 .poster-desc {
 position: absolute;
 z-index: 25;
@@ -149,7 +149,7 @@ height: 93px;
 bottom: 10px;
 right: 210px;
 cursor: pointer;
-z-index: 30;
+z-index: 15;
 object-fit: none;
 -webkit-user-select: none;
 -moz-user-select: none;
@@ -161,35 +161,32 @@ user-select: none;
 -o-user-drag: none;
 user-drag: none;
 }
-/* ========== ПЫЛЬ ========== */
-#dust,
-#spider,
-#posterDust {
+#dust, #spider, #posterDust, #mothFly {
 position: absolute;
 top: 0;
 left: 0;
-width: var(--container-w);
-height: var(--container-h);
+width: 100%;
+height: 100%;
 pointer-events: none;
 }
 #dust { z-index: 12; }
 #spider { z-index: 13; }
-/* ========== СВЕТ ИЗ ЩЕЛЕЙ В ПОТОЛКЕ ========== */
+#mothFly { z-index: 18; }
+#posterDust { z-index: 22; }
 #ceilingLight {
 position: absolute;
 top: 0;
 left: 0;
-width: var(--container-w);
-height: var(--container-h);
+width: 100%;
+height: 100%;
 pointer-events: none;
 }
-/* ========== СВЕЧЕНИЕ ВИДЕОМАГНИТОФОНА ========== */
 #vcrGlow {
 position: absolute;
 top: 0;
 left: 0;
-width: var(--container-w);
-height: var(--container-h);
+width: 100%;
+height: 100%;
 pointer-events: none;
 transition: opacity 0.6s ease;
 }
@@ -207,8 +204,6 @@ animation: vcrShimmer 4s ease-in-out infinite;
 @media (prefers-reduced-motion: reduce) {
 .vcr-glow { animation: none; }
 }
-/* Пыль на верхних торцах кассет — над кассетой, под летающей пылью.
-Текстура генерируется в JS; при вытаскивании кассеты пыль стирается. */
 .cassette-dust {
 position: absolute;
 width: 28px;
@@ -219,8 +214,6 @@ background-size: 100% 100%;
 background-repeat: no-repeat;
 transition: transform 0.2s ease, opacity 0.4s ease;
 }
-#posterDust { z-index: 22; }
-/* ========== ЗВУКОВАЯ ОБЛАСТЬ (полностью невидимая) ========== */
 .vhs-sound-zone {
 position: absolute;
 left: 320px;
@@ -308,12 +301,14 @@ background-image: url('https://i127.ic.org/big/2026/0615/f9/305455d4898d3ee3df87
 <div class="scene" id="scene" style="display: none;">
 <div class="container-wrapper">
 <div class="content-layer" id="contentLayer">
-<div class="container" id="container"></div>
+<div class="container" id="container">
 <canvas id="dust"></canvas>
 <canvas id="spider"></canvas>
+<canvas id="mothFly"></canvas>
 <canvas id="posterDust"></canvas>
-<div id="vhsSoundZone" class="vhs-sound-zone"></div>
 <img id="lightSwitch" class="light-switch" src="./images/off.PNG" alt="Выключатель света">
+</div>
+<div id="vhsSoundZone" class="vhs-sound-zone"></div>
 </div>
 </div>
 </div>
@@ -321,51 +316,15 @@ background-image: url('https://i127.ic.org/big/2026/0615/f9/305455d4898d3ee3df87
 <img src="./images/lightsMod.png" class="overlay-image" id="overlayImage" alt="Overlay">
 </div>
 <script>
-// ========== КОНСТАНТЫ ==========
-const LAYOUT = {
-CONTAINER_W: 1265,
-CONTAINER_H: 550,
-POSTER_DEFAULT_W: 300,
-POSTER_ASPECT_RATIO: 420 / 300,
-EXPAND_OFFSET_Y: -10,
-EXPAND_SCALE_START: 0.2,
-EXPAND_CENTER_TARGET_X: 1200,
-};
-const GRID = {
-CASSETTE_W: 28,
-CASSETTE_H: 192,
-COLS: 36,
-ROWS: 3,
-GAP_X: 6,
-GAP_Y: 10,
-EXTRA_ROW2_OFFSET: 5,
-EXTRA_ROW3_OFFSET: 13,
-GLOBAL_OFFSET_X: 6,
-SKIP_AFTER: 18,
-};
+const LAYOUT = { CONTAINER_W: 1265, CONTAINER_H: 550, POSTER_DEFAULT_W: 300, POSTER_ASPECT_RATIO: 420 / 300, EXPAND_OFFSET_Y: -10, EXPAND_SCALE_START: 0.2, EXPAND_CENTER_TARGET_X: 1200 };
+const GRID = { CASSETTE_W: 28, CASSETTE_H: 192, COLS: 36, ROWS: 3, GAP_X: 6, GAP_Y: 10, EXTRA_ROW2_OFFSET: 5, EXTRA_ROW3_OFFSET: 13, GLOBAL_OFFSET_X: 6, SKIP_AFTER: 18 };
 const AUDIO_URLS = {
-pickSound1: './sounds/cassete_pick1.mp3',
-pickSound2: './sounds/cassete_pick2.mp3',
-openSounds: [
-'./sounds/cassete_take.mp3',
-],
-backgroundMusic: './sounds/basement-ambience.ogg',
-switchSound: './sounds/light.mp3',
-flickerSounds: [
-'./sounds/flicker1.mp3',
-'./sounds/flicker2.mp3',
-'./sounds/flicker3.mp3',
-],
-vhsSounds: [
-'./sounds/VHS1.mp3',
-'./sounds/VHS2.mp3',
-],
+pickSound1: './sounds/cassete_pick1.mp3', pickSound2: './sounds/cassete_pick2.mp3', openSounds: ['./sounds/cassete_take.mp3'],
+backgroundMusic: './sounds/basement-ambience.ogg', switchSound: './sounds/light.mp3',
+flickerSounds: ['./sounds/flicker1.mp3', './sounds/flicker2.mp3', './sounds/flicker3.mp3'], vhsHints: ['./sounds/VHS1.mp3', './sounds/VHS2.mp3'],
 };
-const LIGHT_SWITCH_SRC = {
-off: './images/off.PNG',
-on: './images/on.png',
-};
-// ========== ДАННЫЕ ==========
+const LIGHT_SWITCH_SRC = { off: './images/off.PNG', on: './images/on.png' };
+
 const cassettes = [
 { cassette: './images/wervolf_VHS.jpg', poster: './images/wervolf_cover.jpg', desc: '1997. УЖАСЫ, КОМЕДИЯ. Трое парней путешествуют по Европе в поисках приключений. Они находят их в Париже, когда однажды ночью предотвращают самоубийство молодой девушки.' },
 { cassette: './images/stalk_vhs.jpg', poster: './images/stalk_poster.jpg', desc: '2023. ТРИЛЛЕР, БОЕВИК, КРИМИНАЛ. В сельской местности штата Орегон девушка спасается бегством от разъярённого мужчины с ружьём.' },
@@ -432,74 +391,55 @@ const cassettes = [
 ];
 const DESC_DELAY = 500;
 let descTimer = null;
-// ========== СОСТОЯНИЕ ==========
+
 const state = {
-audioEnabled: false,
-audioElements: null,
-isLightOn: false,
-allAssetsLoaded: false,
-currentExpandedPoster: null,
-isAnimating: false,
-flickerTimer: null,
-flickerGeneration: 0,
-preloadedResources: [],
-brokenAudioCount: 0,
+audioEnabled: false, audioElements: null, isLightOn: false, allAssetsLoaded: false,
+currentExpandedPoster: null, isAnimating: false, flickerTimer: null, flickerGeneration: 0,
+preloadedResources: [], brokenAudioCount: 0,
 };
-// ========== АУДИО ==========
+
 function initAudio() {
 state.audioElements = {
-pickSound1: new Audio(AUDIO_URLS.pickSound1),
-pickSound2: new Audio(AUDIO_URLS.pickSound2),
-openSounds: AUDIO_URLS.openSounds.map(url => new Audio(url)),
-backgroundMusic: new Audio(AUDIO_URLS.backgroundMusic),
-flickerSounds: AUDIO_URLS.flickerSounds.map(url => new Audio(url)),
-switchSound: new Audio(AUDIO_URLS.switchSound),
-vhsSounds: AUDIO_URLS.vhsSounds.map(url => new Audio(url)),
+pickSound1: new Audio(AUDIO_URLS.pickSound1), pickSound2: new Audio(AUDIO_URLS.pickSound2),
+openSounds: AUDIO_URLS.openSounds.map(url => new Audio(url)), backgroundMusic: new Audio(AUDIO_URLS.backgroundMusic),
+flickerSounds: AUDIO_URLS.flickerSounds.map(url => new Audio(url)), switchSound: new Audio(AUDIO_URLS.switchSound),
+vhsHints: AUDIO_URLS.vhsHints.map(url => new Audio(url)),
 };
 state.audioElements.backgroundMusic.loop = true;
 state.audioElements.backgroundMusic.volume = 0.3;
 }
 function playRandomPickSound() {
 if (!state.audioEnabled || !state.audioElements) return;
-const sound = Math.random() > 0.5
-? state.audioElements.pickSound1
-: state.audioElements.pickSound2;
-sound.currentTime = 0;
-sound.play().catch(() => {});
+const sound = Math.random() > 0.5 ? state.audioElements.pickSound1 : state.audioElements.pickSound2;
+sound.currentTime = 0; sound.play().catch(() => {});
 }
 function playOpenSound() {
 if (!state.audioEnabled || !state.audioElements) return;
 const sounds = state.audioElements.openSounds;
 const sound = sounds[Math.floor(Math.random() * sounds.length)];
-sound.currentTime = 0;
-sound.play().catch(() => {});
+sound.currentTime = 0; sound.play().catch(() => {});
 }
 function playRandomFlickerSound() {
 if (!state.audioEnabled || !state.audioElements) return;
 const sounds = state.audioElements.flickerSounds;
 const sound = sounds[Math.floor(Math.random() * sounds.length)];
-sound.currentTime = 0;
-sound.play().catch(() => {});
+sound.currentTime = 0; sound.play().catch(() => {});
 }
 function playSwitchSound() {
 if (!state.audioEnabled || !state.audioElements) return;
 state.audioElements.switchSound.currentTime = 0;
 state.audioElements.switchSound.play().catch(() => {});
 }
-function playRandomVhsSound() {
+function playRandomVhsHint() {
 if (!state.audioEnabled || !state.audioElements) return;
-const sounds = state.audioElements.vhsSounds;
+const sounds = state.audioElements.vhsHints;
 const sound = sounds[Math.floor(Math.random() * sounds.length)];
-sound.currentTime = 0;
-sound.play().catch(() => {});
+sound.currentTime = 0; sound.play().catch(() => {});
 return sound;
 }
 function stopFlickerSounds() {
 if (!state.audioElements) return;
-state.audioElements.flickerSounds.forEach(sound => {
-sound.pause();
-sound.currentTime = 0;
-});
+state.audioElements.flickerSounds.forEach(sound => { sound.pause(); sound.currentTime = 0; });
 }
 function tryPlayBackgroundMusic() {
 const music = state.audioElements && state.audioElements.backgroundMusic;
@@ -512,15 +452,10 @@ document.addEventListener('click', handleInteraction, { once: true });
 document.addEventListener('keydown', handleInteraction, { once: true });
 });
 }
-// ========== ОПИСАНИЕ ФИЛЬМА ==========
+
 function getDescElement() {
 let el = document.getElementById('posterDesc');
-if (!el) {
-el = document.createElement('div');
-el.id = 'posterDesc';
-el.className = 'poster-desc';
-document.getElementById('container').appendChild(el);
-}
+if (!el) { el = document.createElement('div'); el.id = 'posterDesc'; el.className = 'poster-desc'; document.getElementById('container').appendChild(el); }
 return el;
 }
 function hidePosterDesc() {
@@ -540,9 +475,7 @@ const posterRect = poster.getBoundingClientRect();
 const descW = el.offsetWidth;
 const descH = el.offsetHeight;
 let left = (posterRect.right - containerRect.left) + 14;
-if (left + descW > containerRect.width - 8) {
-left = (posterRect.left - containerRect.left) - descW - 14;
-}
+if (left + descW > containerRect.width - 8) left = (posterRect.left - containerRect.left) - descW - 14;
 if (left < 8) left = 8;
 let top = posterRect.top - containerRect.top;
 top = Math.max(8, Math.min(top, containerRect.height - descH - 8));
@@ -550,19 +483,10 @@ el.style.left = left + 'px';
 el.style.top = top + 'px';
 el.classList.add('visible');
 }
-// ========== ПРЕДЗАГРУЗКА ==========
+
 function preloadImages() {
-const baseUrls = [
-'./images/BGMod.jpg',
-'./images/lightsMod.png',
-'./images/catModGif.gif',
-'./images/off.PNG',
-'./images/on.png',
-];
-const urls = [
-...baseUrls,
-...cassettes.flatMap(c => [c.cassette, c.poster]),
-];
+const baseUrls = ['./images/BGMod.jpg', './images/lightsMod.png', './images/catModGif.gif', './images/off.PNG', './images/on.png'];
+const urls = [...baseUrls, ...cassettes.flatMap(c => [c.cassette, c.poster])];
 return new Promise((resolve) => {
 let loaded = 0;
 const total = urls.length;
@@ -570,58 +494,28 @@ if (total === 0) { resolve(); return; }
 urls.forEach(src => {
 const img = new Image();
 state.preloadedResources.push(img);
-const done = () => {
-loaded++;
-if (loaded === total) resolve();
-};
-img.onload = done;
-img.onerror = done;
-img.src = src;
+const done = () => { loaded++; if (loaded === total) resolve(); };
+img.onload = done; img.onerror = done; img.src = src;
 });
 });
 }
 function preloadAudio() {
 return new Promise((resolve) => {
 initAudio();
-const elements = [
-state.audioElements.pickSound1,
-state.audioElements.pickSound2,
-...state.audioElements.openSounds,
-state.audioElements.backgroundMusic,
-state.audioElements.switchSound,
-...state.audioElements.flickerSounds,
-...state.audioElements.vhsSounds,
-];
-let loaded = 0;
-let broken = 0;
-let settled = false;
+const elements = [state.audioElements.pickSound1, state.audioElements.pickSound2, ...state.audioElements.openSounds, state.audioElements.backgroundMusic, state.audioElements.switchSound, ...state.audioElements.flickerSounds, ...state.audioElements.vhsHints];
+let loaded = 0, broken = 0, settled = false;
 const total = elements.length;
-const finish = () => {
-if (settled) return;
-settled = true;
-state.brokenAudioCount = broken;
-resolve();
-};
+const finish = () => { if (settled) return; settled = true; state.brokenAudioCount = broken; resolve(); };
 if (total === 0) { finish(); return; }
-setTimeout(() => {
-finish();
-}, 25000);
+setTimeout(finish, 25000);
 elements.forEach(audio => {
-audio.addEventListener('canplaythrough', () => {
-if (settled) return;
-loaded++;
-if (loaded === total) finish();
-}, { once: true });
-audio.addEventListener('error', () => {
-broken++;
-if (settled) return;
-loaded++;
-if (loaded === total) finish();
-}, { once: true });
+audio.addEventListener('canplaythrough', () => { if (settled) return; loaded++; if (loaded === total) finish(); }, { once: true });
+audio.addEventListener('error', () => { broken++; if (settled) return; loaded++; if (loaded === total) finish(); }, { once: true });
 audio.load();
 });
 });
 }
+
 function enterScene() {
 if (!state.allAssetsLoaded) return;
 document.getElementById('loadingScreen').style.display = 'none';
@@ -634,11 +528,13 @@ tryPlayBackgroundMusic();
 createCassettes();
 setupDust();
 setupSpider();
+setupFlyingMoth();
 setupVcrGlow();
 setupCeilingLight();
 setupDraft();
 scheduleFlicker();
 }
+
 function gridSlot(i) {
 const row = Math.floor(i / GRID.COLS);
 const colInRow = i % GRID.COLS;
@@ -657,7 +553,7 @@ const rect = scene.getBoundingClientRect();
 overlay.style.left = rect.left + 'px';
 overlay.style.top = rect.top + 'px';
 }
-// ========== СОЗДАНИЕ КАССЕТ ==========
+
 function createCassettes() {
 const container = document.getElementById('container');
 const fragment = document.createDocumentFragment();
@@ -676,17 +572,13 @@ poster.className = 'vhs-poster';
 poster.id = `poster${i + 1}`;
 poster.draggable = false;
 poster.setAttribute('draggable', 'false');
-if (cassettes[i].posterWidth) {
-poster.style.width = `${cassettes[i].posterWidth}px`;
-}
+if (cassettes[i].posterWidth) poster.style.width = `${cassettes[i].posterWidth}px`;
 poster.addEventListener('mouseenter', () => {
 if (state.currentExpandedPoster !== poster) return;
 if (descTimer) clearTimeout(descTimer);
 descTimer = setTimeout(() => showPosterDesc(poster, i), DESC_DELAY);
 });
-poster.addEventListener('mouseleave', () => {
-hidePosterDesc();
-});
+poster.addEventListener('mouseleave', () => { hidePosterDesc(); });
 const { left, top } = gridSlot(i);
 cassette.style.left = `${left}px`;
 cassette.style.top = `${top}px`;
@@ -701,12 +593,10 @@ container.addEventListener('click', handleContainerClick);
 container.addEventListener('mouseenter', handleContainerMouseEnter, true);
 container.addEventListener('mouseleave', handleContainerMouseLeave, true);
 }
+
 function handleContainerClick(e) {
 const poster = e.target.closest('.vhs-poster');
-if (poster && poster.classList.contains('poster-visible')) {
-collapseCurrentPoster();
-return;
-}
+if (poster && poster.classList.contains('poster-visible')) { collapseCurrentPoster(); return; }
 const cassette = e.target.closest('.vhs-cassette');
 if (!cassette) return;
 const index = parseInt(cassette.dataset.index, 10);
@@ -730,12 +620,9 @@ const cassette = e.target.closest('.vhs-cassette');
 if (!cassette) return;
 setCassetteShift(cassette, 'none');
 }
-// ========== РАСКРЫТИЕ / СКРЫТИЕ ПОСТЕРА ==========
+
 function handleCassetteClick(cassette, poster, posterWidth) {
-if (state.currentExpandedPoster?.dataset.cassetteId === cassette.id) {
-collapseCurrentPoster();
-return;
-}
+if (state.currentExpandedPoster?.dataset.cassetteId === cassette.id) { collapseCurrentPoster(); return; }
 if (state.currentExpandedPoster) {
 collapseCurrentPoster(() => expandCassette(cassette, poster, posterWidth));
 return;
@@ -768,13 +655,7 @@ const posterHeight = posterWidth * LAYOUT.POSTER_ASPECT_RATIO;
 const centerY = (LAYOUT.CONTAINER_H - posterHeight) / 2 + LAYOUT.EXPAND_OFFSET_Y;
 poster.style.transform = `translate(${centerX}px, ${centerY}px) scale(1)`;
 setTimeout(() => {
-const posterRect = {
-x: centerX,
-y: centerY,
-w: poster.offsetWidth || posterWidth,
-h: poster.offsetHeight || posterHeight,
-};
-puffDust(posterRect, 'unfold');
+puffDust({ x: centerX, y: centerY, w: poster.offsetWidth || posterWidth, h: poster.offsetHeight || posterHeight }, 'unfold');
 poster.classList.remove('expanding');
 state.isAnimating = false;
 }, 300);
@@ -806,7 +687,7 @@ state.isAnimating = false;
 if (typeof callback === 'function') callback();
 }, 300);
 }
-// ========== ПРОЛИСТЫВАНИЕ КЛАВИШАМИ ==========
+
 function getCassetteIndexFromId(cassetteId) {
 const match = cassetteId.match(/cassette(\d+)/);
 return match ? parseInt(match[1], 10) - 1 : -1;
@@ -829,45 +710,30 @@ oldCassette.style.pointerEvents = 'auto';
 const newCassette = document.getElementById(`cassette${newIndex + 1}`);
 const newPoster = document.getElementById(`poster${newIndex + 1}`);
 if (!newCassette || !newPoster) return;
-const posterWidth = cassettes[newIndex].posterWidth || LAYOUT.POSTER_DEFAULT_W;
-expandCassette(newCassette, newPoster, posterWidth);
+expandCassette(newCassette, newPoster, cassettes[newIndex].posterWidth || LAYOUT.POSTER_DEFAULT_W);
 }
+
 document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && state.currentExpandedPoster) {
-e.preventDefault();
-collapseCurrentPoster();
-return;
-}
+if (e.key === 'Escape' && state.currentExpandedPoster) { e.preventDefault(); collapseCurrentPoster(); return; }
 if (!state.currentExpandedPoster) return;
-if (e.key === 'ArrowLeft') {
-e.preventDefault();
-switchPoster(-1);
-} else if (e.key === 'ArrowRight') {
-e.preventDefault();
-switchPoster(1);
-}
+if (e.key === 'ArrowLeft') { e.preventDefault(); switchPoster(-1); }
+else if (e.key === 'ArrowRight') { e.preventDefault(); switchPoster(1); }
 });
-// ========== КЛИК ВНЕ ПОСТЕРА ==========
 document.addEventListener('click', (e) => {
 const lightSwitch = document.getElementById('lightSwitch');
-if (lightSwitch && (e.target === lightSwitch || lightSwitch.contains(e.target))) {
-return;
-}
+if (lightSwitch && (e.target === lightSwitch || lightSwitch.contains(e.target))) return;
 const soundZone = document.getElementById('vhsSoundZone');
-if (soundZone && (e.target === soundZone || soundZone.contains(e.target))) {
-return;
-}
+if (soundZone && (e.target === soundZone || soundZone.contains(e.target))) return;
 if (!e.target.closest('.vhs-cassette') && !e.target.closest('.vhs-poster') && state.currentExpandedPoster) {
 collapseCurrentPoster();
 }
 });
-// ========== ЗВУКОВАЯ ОБЛАСТЬ ==========
 document.addEventListener('DOMContentLoaded', () => {
 const soundZone = document.getElementById('vhsSoundZone');
 if (soundZone) {
 soundZone.addEventListener('click', (e) => {
 e.stopPropagation();
-const sound = playRandomVhsSound();
+const sound = playRandomVhsHint();
 const ms = sound && Number.isFinite(sound.duration) ? sound.duration * 1000 : 0;
 pulseVcrGlow(ms);
 });
@@ -875,16 +741,9 @@ pulseVcrGlow(ms);
 const ls = document.getElementById('lightSwitch');
 if (ls) ls.addEventListener('click', toggleLight);
 });
-// ========== ПЫЛЬ ==========
-const DUST_ENABLED = true;
-const DUST_COUNT = 350;
-const DUST_SPEED = 20;
-const DUST_COLOR = '#fff3dc';
-const PUFF_ENABLED = true;
-const PUFF_AMOUNT = 2;
-const PUFF_ON_HOVER = true;
-const PUFF_HOVER_CHANCE = 0.6;
-const PUFF_MAX_PARTICLES = 600;
+
+const DUST_ENABLED = true, DUST_COUNT = 350, DUST_SPEED = 20, DUST_COLOR = '#fff3dc';
+const PUFF_ENABLED = true, PUFF_AMOUNT = 2, PUFF_ON_HOVER = true, PUFF_HOVER_CHANCE = 0.6, PUFF_MAX_PARTICLES = 600;
 const dustRand = (a, b) => a + Math.random() * (b - a);
 function setupDustCanvas(id) {
 const canvas = document.getElementById(id);
@@ -902,27 +761,16 @@ const ctx = setupDustCanvas('dust');
 if (!ctx) return;
 const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
 const particles = Array.from({ length: DUST_COUNT }, () => ({
-x: dustRand(0, W),
-y: dustRand(0, H),
-vx: dustRand(-1, 1) * DUST_SPEED,
-vy: dustRand(-1, 1) * DUST_SPEED * 0.6,
-size: Math.random() < 0.85 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.4),
-alpha: dustRand(0.25, 0.75),
-tw: dustRand(0.5, 1.6),
-ph: dustRand(0, Math.PI * 2),
+x: dustRand(0, W), y: dustRand(0, H), vx: dustRand(-1, 1) * DUST_SPEED, vy: dustRand(-1, 1) * DUST_SPEED * 0.6,
+size: Math.random() < 0.85 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.4), alpha: dustRand(0.25, 0.75), tw: dustRand(0.5, 1.6), ph: dustRand(0, Math.PI * 2),
 }));
-let lightMix = state.isLightOn ? 1 : 0;
-let cleared = false;
-let last = performance.now();
+let lightMix = state.isLightOn ? 1 : 0, cleared = false, last = performance.now();
 const frame = (now) => {
 requestAnimationFrame(frame);
 const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
 last = now;
 lightMix += ((state.isLightOn ? 1 : 0) - lightMix) * Math.min(1, dt * 4);
-if (lightMix < 0.01) {
-if (!cleared) { ctx.clearRect(0, 0, W, H); cleared = true; }
-return;
-}
+if (lightMix < 0.01) { if (!cleared) { ctx.clearRect(0, 0, W, H); cleared = true; } return; }
 cleared = false;
 ctx.clearRect(0, 0, W, H);
 const t = now / 1000;
@@ -931,95 +779,68 @@ for (const p of particles) {
 p.vx += dustRand(-1, 1) * DUST_SPEED * dt * 2;
 p.vy += (dustRand(-1, 1) * DUST_SPEED * 2 - DUST_SPEED * 0.15) * dt;
 applyDraft(p, dt, 1.5);
-p.vx *= 1 - dt * 0.5;
-p.vy *= 1 - dt * 0.5;
-p.x += p.vx * dt;
-p.y += p.vy * dt;
+p.vx *= 1 - dt * 0.5; p.vy *= 1 - dt * 0.5;
+p.x += p.vx * dt; p.y += p.vy * dt;
 if (p.x < -5) p.x = W + 5; else if (p.x > W + 5) p.x = -5;
 if (p.y < -5) p.y = H + 5; else if (p.y > H + 5) p.y = -5;
 const twinkle = 0.6 + 0.4 * Math.sin(t * p.tw + p.ph);
 const a = p.alpha * twinkle * lightMix;
 if (a <= 0.01) continue;
 ctx.globalAlpha = Math.min(1, a);
-ctx.beginPath();
-ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-ctx.fill();
+ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
 }
 ctx.globalAlpha = 1;
 };
 requestAnimationFrame(frame);
 }
+
 const puff = { ctx: null, sprite: null, parts: [], running: false };
 function makePuffSprite() {
-const s = document.createElement('canvas');
-s.width = s.height = 64;
+const s = document.createElement('canvas'); s.width = s.height = 64;
 const sc = s.getContext('2d');
 const g = sc.createRadialGradient(32, 32, 0, 32, 32, 32);
-g.addColorStop(0, 'rgba(235, 222, 196, 1)');
-g.addColorStop(0.4, 'rgba(225, 210, 180, 0.45)');
-g.addColorStop(1, 'rgba(220, 205, 175, 0)');
-sc.fillStyle = g;
-sc.fillRect(0, 0, 64, 64);
+g.addColorStop(0, 'rgba(235, 222, 196, 1)'); g.addColorStop(0.4, 'rgba(225, 210, 180, 0.45)'); g.addColorStop(1, 'rgba(220, 205, 175, 0)');
+sc.fillStyle = g; sc.fillRect(0, 0, 64, 64);
 return s;
 }
 function puffDust(rect, kind) {
 if (!PUFF_ENABLED || PUFF_AMOUNT <= 0) return;
 const cfg = {
-pull:   { specks: 20, clouds: 2, speed: 28,  fall: 45, life: [1.2, 2.4], from: 'top' },
+pull: { specks: 20, clouds: 2, speed: 28, fall: 45, life: [1.2, 2.4], from: 'top' },
 unfold: { specks: 45, clouds: 6, speed: 140, fall: 10, life: [1.0, 2.2], from: 'edge' },
-land:   { specks: 12, clouds: 2, speed: 22,  fall: 35, life: [1.0, 2.0], from: 'top' },
-hover:  { specks: 4,  clouds: 0, speed: 12,  fall: 40, life: [0.8, 1.6], from: 'top' },
+land: { specks: 12, clouds: 2, speed: 22, fall: 35, life: [1.0, 2.0], from: 'top' },
+hover: { specks: 4, clouds: 0, speed: 12, fall: 40, life: [0.8, 1.6], from: 'top' },
 }[kind];
 if (!cfg) return;
-if (!puff.ctx) {
-puff.ctx = setupDustCanvas('posterDust');
-if (!puff.ctx) return;
-puff.sprite = makePuffSprite();
-}
+if (!puff.ctx) { puff.ctx = setupDustCanvas('posterDust'); if (!puff.ctx) return; puff.sprite = makePuffSprite(); }
 const now = performance.now();
 const spawn = (cloud) => {
 let x, y, vx, vy;
 if (cfg.from === 'edge') {
-let nx, ny;
-let t = dustRand(0, 2 * (rect.w + rect.h));
+let nx, ny, t = dustRand(0, 2 * (rect.w + rect.h));
 if (t < rect.w) { x = rect.x + t; y = rect.y; nx = 0; ny = -1; }
 else if ((t -= rect.w) < rect.h) { x = rect.x + rect.w; y = rect.y + t; nx = 1; ny = 0; }
 else if ((t -= rect.h) < rect.w) { x = rect.x + rect.w - t; y = rect.y + rect.h; nx = 0; ny = 1; }
 else { t -= rect.w; x = rect.x; y = rect.y + rect.h - t; nx = -1; ny = 0; }
 const v = cfg.speed * dustRand(0.3, 1) * (cloud ? 0.5 : 1);
-vx = nx * v + dustRand(-1, 1) * cfg.speed * 0.25;
-vy = ny * v + dustRand(-1, 1) * cfg.speed * 0.25;
+vx = nx * v + dustRand(-1, 1) * cfg.speed * 0.25; vy = ny * v + dustRand(-1, 1) * cfg.speed * 0.25;
 } else {
-x = rect.x + dustRand(-0.2, 1.2) * rect.w;
-y = rect.y + dustRand(0, 0.2) * rect.h;
-const v = cfg.speed * (cloud ? 0.5 : 1);
-vx = dustRand(-1, 1) * v;
-vy = dustRand(-0.9, 0.3) * v;
+x = rect.x + dustRand(-0.2, 1.2) * rect.w; y = rect.y + dustRand(0, 0.2) * rect.h;
+const v = cfg.speed * (cloud ? 0.5 : 1); vx = dustRand(-1, 1) * v; vy = dustRand(-0.9, 0.3) * v;
 }
-puff.parts.push({
-x, y, vx, vy,
-fall: cloud ? cfg.fall * 0.1 : cfg.fall * dustRand(0.6, 1.2),
-born: now,
-life: dustRand(cfg.life[0], cfg.life[1]) * (cloud ? 1.3 : 1),
-size: cloud ? dustRand(10, 20) : (Math.random() < 0.8 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.3)),
-alpha: cloud ? dustRand(0.12, 0.22) : dustRand(0.4, 0.85),
-cloud,
-});
+puff.parts.push({ x, y, vx, vy, fall: cloud ? cfg.fall * 0.1 : cfg.fall * dustRand(0.6, 1.2), born: now, life: dustRand(cfg.life[0], cfg.life[1]) * (cloud ? 1.3 : 1), size: cloud ? dustRand(10, 20) : (Math.random() < 0.8 ? dustRand(0.5, 1.3) : dustRand(1.5, 2.3)), alpha: cloud ? dustRand(0.12, 0.22) : dustRand(0.4, 0.85), cloud });
 };
 const n = (k) => Math.round(k * PUFF_AMOUNT);
 for (let i = 0; i < n(cfg.specks); i++) spawn(false);
 for (let i = 0; i < n(cfg.clouds); i++) spawn(true);
-if (puff.parts.length > PUFF_MAX_PARTICLES) {
-puff.parts.splice(0, puff.parts.length - PUFF_MAX_PARTICLES);
-}
+if (puff.parts.length > PUFF_MAX_PARTICLES) puff.parts.splice(0, puff.parts.length - PUFF_MAX_PARTICLES);
 if (puff.running) return;
 puff.running = true;
 let last = performance.now();
 const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
 const frame = (t) => {
 const ctx = puff.ctx;
-const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05);
-last = t;
+const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05); last = t;
 ctx.clearRect(0, 0, W, H);
 puff.parts = puff.parts.filter(p => (t - p.born) / 1000 < p.life);
 if (!puff.parts.length) { puff.running = false; return; }
@@ -1028,114 +849,72 @@ const drag = p.cloud ? 3 : 2.2;
 applyDraft(p, dt, 2);
 p.vx += dustRand(-1, 1) * 30 * dt - p.vx * drag * dt;
 p.vy += dustRand(-1, 1) * 30 * dt - p.vy * drag * dt + p.fall * dt;
-p.x += p.vx * dt;
-p.y += p.vy * dt;
+p.x += p.vx * dt; p.y += p.vy * dt;
 if (p.cloud) p.size += 8 * dt;
 const k = (t - p.born) / 1000 / p.life;
 const a = p.alpha * Math.min(1, k * 10) * (1 - k) ** 1.5;
 if (a <= 0.005) continue;
 ctx.globalAlpha = a;
-if (p.cloud) {
-ctx.drawImage(puff.sprite, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
-} else {
-ctx.fillStyle = DUST_COLOR;
-ctx.beginPath();
-ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-ctx.fill();
-}
+if (p.cloud) ctx.drawImage(puff.sprite, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+else { ctx.fillStyle = DUST_COLOR; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
 }
 ctx.globalAlpha = 1;
 requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);
 }
-const TOP_DUST_ENABLED = true;
-const TOP_DUST_VARIANTS = 8;
-const TOP_DUST_OPACITY = [0.55, 0.95];
-const TOP_DUST_RESIDUE = 0.15;
-const TOP_DUST_W = 28, TOP_DUST_H = 18;
+
+const TOP_DUST_ENABLED = true, TOP_DUST_VARIANTS = 8, TOP_DUST_OPACITY = [0.55, 0.95], TOP_DUST_RESIDUE = 0.15, TOP_DUST_W = 28, TOP_DUST_H = 18;
 let topDustTextures = null;
 function makeTopDustTexture() {
-const dpr = 2;
-const W = TOP_DUST_W, H = TOP_DUST_H;
-const c = document.createElement('canvas');
-c.width = W * dpr;
-c.height = H * dpr;
-const ctx = c.getContext('2d');
-ctx.scale(dpr, dpr);
+const dpr = 2, W = TOP_DUST_W, H = TOP_DUST_H;
+const c = document.createElement('canvas'); c.width = W * dpr; c.height = H * dpr;
+const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
 for (let x = 0; x < W; x += 1) {
 const depth = dustRand(2, 5) + Math.sin(x * 0.7 + dustRand(0, 6)) * 1;
 const g = ctx.createLinearGradient(0, 0, 0, depth);
-g.addColorStop(0, 'rgba(205, 195, 175, 0.75)');
-g.addColorStop(1, 'rgba(190, 180, 160, 0)');
-ctx.fillStyle = g;
-ctx.fillRect(x, 0, 1, depth);
+g.addColorStop(0, 'rgba(205, 195, 175, 0.75)'); g.addColorStop(1, 'rgba(190, 180, 160, 0)');
+ctx.fillStyle = g; ctx.fillRect(x, 0, 1, depth);
 }
 for (let i = 0; i < 140; i++) {
-const y = H * Math.pow(Math.random(), 2.2);
-const density = 1 - y / H;
+const y = H * Math.pow(Math.random(), 2.2), density = 1 - y / H;
 ctx.globalAlpha = dustRand(0.15, 0.6) * density;
 ctx.fillStyle = Math.random() < 0.7 ? '#cfc4ad' : '#9d927e';
 const s = Math.random() < 0.85 ? dustRand(0.4, 0.9) : dustRand(1, 1.6);
-ctx.beginPath();
-ctx.arc(dustRand(0, W), y, s, 0, Math.PI * 2);
-ctx.fill();
+ctx.beginPath(); ctx.arc(dustRand(0, W), y, s, 0, Math.PI * 2); ctx.fill();
 }
 const fluffs = Math.floor(dustRand(0, 3));
 for (let i = 0; i < fluffs; i++) {
 const fx = dustRand(3, W - 3), fy = dustRand(0, 2.5), fr = dustRand(1.5, 3);
 const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
-g.addColorStop(0, 'rgba(215, 205, 185, 0.7)');
-g.addColorStop(1, 'rgba(215, 205, 185, 0)');
-ctx.globalAlpha = 1;
-ctx.fillStyle = g;
-ctx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
+g.addColorStop(0, 'rgba(215, 205, 185, 0.7)'); g.addColorStop(1, 'rgba(215, 205, 185, 0)');
+ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
 }
 ctx.globalAlpha = 1;
 return c.toDataURL('image/png');
 }
 function createTopDust(cassette, index) {
 if (!TOP_DUST_ENABLED) return null;
-if (!topDustTextures) {
-topDustTextures = Array.from({ length: TOP_DUST_VARIANTS }, makeTopDustTexture);
-}
+if (!topDustTextures) topDustTextures = Array.from({ length: TOP_DUST_VARIANTS }, makeTopDustTexture);
 const el = document.createElement('div');
-el.className = 'cassette-dust';
-el.id = `cassetteDust${index + 1}`;
+el.className = 'cassette-dust'; el.id = `cassetteDust${index + 1}`;
 const tex = topDustTextures[Math.floor(Math.random() * topDustTextures.length)];
 el.style.backgroundImage = `url(${tex})`;
 el.dataset.opacity = dustRand(TOP_DUST_OPACITY[0], TOP_DUST_OPACITY[1]).toFixed(2);
 el.style.opacity = el.dataset.opacity;
-el.style.left = cassette.style.left;
-el.style.top = cassette.style.top;
+el.style.left = cassette.style.left; el.style.top = cassette.style.top;
 cassette.dataset.dusty = 'true';
 return el;
 }
-function getTopDust(cassette) {
-return document.getElementById(cassette.id.replace('cassette', 'cassetteDust'));
-}
-function isCassetteDusty(cassette) {
-return TOP_DUST_ENABLED && cassette.dataset.dusty === 'true';
-}
+function getTopDust(cassette) { return document.getElementById(cassette.id.replace('cassette', 'cassetteDust')); }
+function isCassetteDusty(cassette) { return TOP_DUST_ENABLED && cassette.dataset.dusty === 'true'; }
 function wipeTopDust(cassette) {
-const el = getTopDust(cassette);
-if (!el) return;
-if (isCassetteDusty(cassette)) {
-cassette.dataset.dusty = 'false';
-el.dataset.opacity = (parseFloat(el.dataset.opacity) * TOP_DUST_RESIDUE).toFixed(2);
+const el = getTopDust(cassette); if (!el) return;
+if (isCassetteDusty(cassette)) { cassette.dataset.dusty = 'false'; el.dataset.opacity = (parseFloat(el.dataset.opacity) * TOP_DUST_RESIDUE).toFixed(2); }
+el.style.transition = 'none'; el.style.opacity = '0';
 }
-el.style.transition = 'none';
-el.style.opacity = '0';
-}
-function showTopDust(cassette) {
-const el = getTopDust(cassette);
-if (!el) return;
-el.style.transition = '';
-el.style.opacity = el.dataset.opacity;
-}
-function cassetteLayers(cassette) {
-return [cassette, getTopDust(cassette)].filter(Boolean);
-}
+function showTopDust(cassette) { const el = getTopDust(cassette); if (!el) return; el.style.transition = ''; el.style.opacity = el.dataset.opacity; }
+function cassetteLayers(cassette) { return [cassette, getTopDust(cassette)].filter(Boolean); }
 function setCassetteShift(cassette, transform) {
 cassette.dataset.shift = transform;
 const lean = parseFloat(cassette.dataset.lean) || 0;
@@ -1145,13 +924,8 @@ if (lean) parts.push(`rotate(${lean}deg)`);
 const full = parts.length ? parts.join(' ') : 'none';
 cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
 }
-// ---------- Покосившиеся кассеты ----------
-const LEAN_ENABLED = true;
-const LEAN_INTO_GAP = false;           // последняя в ряду НЕ заваливается в пустое место
-const LEAN_GAP_ANGLE = [7, 11];        // °, наклон в пустоту (не используется при LEAN_INTO_GAP = false)
-const LEAN_RANDOM_COUNT = [1, 2];      // сколько случайных кассет чуть покосились
-const LEAN_RANDOM_ANGLE = [1.2, 1.8];  // °, упираются в соседа (зазор между кассетами 6px)
-const LEAN_STRAIGHTEN_MS = 450;        // как долго выпрямляется
+
+const LEAN_ENABLED = true, LEAN_INTO_GAP = false, LEAN_GAP_ANGLE = [7, 11], LEAN_RANDOM_COUNT = [1, 2], LEAN_RANDOM_ANGLE = [1.2, 1.8], LEAN_STRAIGHTEN_MS = 450;
 function leanCassette(cassette, deg) {
 if (!cassette || !deg) return;
 cassette.dataset.lean = deg.toFixed(2);
@@ -1163,12 +937,7 @@ function setupLeaningCassettes(total) {
 if (!LEAN_ENABLED || total < 2) return;
 const byIndex = (i) => document.getElementById(`cassette${i + 1}`);
 const leaned = new Set();
-// Последняя кассета, если ряд не заполнен, — наклон вправо, в пустоту (отключено)
-if (LEAN_INTO_GAP && total % GRID.COLS !== 0 && total < GRID.COLS * GRID.ROWS) {
-leanCassette(byIndex(total - 1), dustRand(LEAN_GAP_ANGLE[0], LEAN_GAP_ANGLE[1]));
-leaned.add(total - 1);
-}
-// Пара случайных — чуть-чуть, в сторону существующего соседа по ряду
+if (LEAN_INTO_GAP && total % GRID.COLS !== 0 && total < GRID.COLS * GRID.ROWS) { leanCassette(byIndex(total - 1), dustRand(LEAN_GAP_ANGLE[0], LEAN_GAP_ANGLE[1])); leaned.add(total - 1); }
 const count = Math.round(dustRand(LEAN_RANDOM_COUNT[0], LEAN_RANDOM_COUNT[1]));
 for (let n = 0, tries = 0; n < count && tries < 50; tries++) {
 const i = Math.floor(Math.random() * total);
@@ -1179,8 +948,7 @@ const canLeft = col > 0;
 if (!canRight && !canLeft) continue;
 const dir = canRight && (!canLeft || Math.random() < 0.5) ? 1 : -1;
 leanCassette(byIndex(i), dir * dustRand(LEAN_RANDOM_ANGLE[0], LEAN_RANDOM_ANGLE[1]));
-leaned.add(i);
-n++;
+leaned.add(i); n++;
 }
 }
 function straightenCassette(cassette, animate) {
@@ -1188,33 +956,26 @@ if (!(parseFloat(cassette.dataset.lean) || 0)) return;
 cassette.dataset.lean = '0';
 const layers = cassetteLayers(cassette);
 if (animate) {
-layers.forEach(el => {
-el.style.transition = `transform ${LEAN_STRAIGHTEN_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1)`;
-});
+layers.forEach(el => { el.style.transition = `transform ${LEAN_STRAIGHTEN_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1)`; });
 setTimeout(() => layers.forEach(el => { el.style.transition = ''; }), LEAN_STRAIGHTEN_MS + 50);
 }
 setCassetteShift(cassette, cassette.dataset.shift || 'none');
 }
-// ========== ПАУК НА ПАУТИНКЕ ==========
-const SPIDER_ENABLED = true;
-const SPIDER_GAP = [15000, 40000];
-const SPIDER_CHANCE = 0.6;
-const SPIDER_ONLY_IN_LIGHT = true;
-const SPIDER_DROP = [70, 260];
-const SPIDER_HANG = [3000, 8000];
-const SPIDER_SCARE_RADIUS = 70;
-const SPIDER_SIZE = [0.85, 1.25];
-const SPIDER_DESCEND_SPEED = 55;
-const SPIDER_CLIMB_SPEED = 35;
-const SPIDER_FLEE_SPEED = 170;
+
+const SPIDER_ENABLED = true, SPIDER_GAP = [15000, 40000], SPIDER_CHANCE = 0.6, SPIDER_ONLY_IN_LIGHT = true, SPIDER_DROP = [70, 260], SPIDER_HANG = [3000, 8000], SPIDER_SCARE_RADIUS = 70, SPIDER_SIZE = [0.85, 1.25], SPIDER_DESCEND_SPEED = 55, SPIDER_CLIMB_SPEED = 35, SPIDER_FLEE_SPEED = 170;
 const spider = { ctx: null, active: null, timer: 0, mouseX: -1e4, mouseY: -1e4 };
 function setupSpider() {
 if (!SPIDER_ENABLED) return;
-spider.ctx = setupDustCanvas('spider');
-if (!spider.ctx) return;
+spider.ctx = setupDustCanvas('spider'); if (!spider.ctx) return;
 document.addEventListener('mousemove', (e) => {
 spider.mouseX = e.clientX;
 spider.mouseY = e.clientY;
+const container = document.getElementById('container');
+if (container) {
+const rect = container.getBoundingClientRect();
+mothFly.mouseX = e.clientX - rect.left;
+mothFly.mouseY = e.clientY - rect.top;
+}
 });
 scheduleSpider();
 }
@@ -1228,26 +989,10 @@ scheduleSpider();
 }
 function startSpider() {
 const now = performance.now();
-spider.active = {
-x: dustRand(30, LAYOUT.CONTAINER_W - 30),
-len: 0,
-target: dustRand(SPIDER_DROP[0], SPIDER_DROP[1]),
-phase: 'descend',
-phaseStart: now,
-pauseUntil: 0,
-hangFor: dustRand(SPIDER_HANG[0], SPIDER_HANG[1]),
-swing: 0,
-swingV: dustRand(-0.15, 0.15),
-scale: dustRand(SPIDER_SIZE[0], SPIDER_SIZE[1]),
-flee: false,
-twitchUntil: 0,
-bob: 0,
-};
-const ctx = spider.ctx;
-let last = now;
+spider.active = { x: dustRand(30, LAYOUT.CONTAINER_W - 30), len: 0, target: dustRand(SPIDER_DROP[0], SPIDER_DROP[1]), phase: 'descend', phaseStart: now, pauseUntil: 0, hangFor: dustRand(SPIDER_HANG[0], SPIDER_HANG[1]), swing: 0, swingV: dustRand(-0.15, 0.15), scale: dustRand(SPIDER_SIZE[0], SPIDER_SIZE[1]), flee: false, twitchUntil: 0, bob: 0 };
+const ctx = spider.ctx; let last = now;
 const frame = (t) => {
-const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05);
-last = t;
+const dt = Math.min(Math.max((t - last) / 1000, 0), 0.05); last = t;
 ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
 if (!updateSpider(spider.active, t, dt)) { spider.active = null; return; }
 drawSpider(ctx, spider.active, t);
@@ -1255,49 +1000,26 @@ requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);
 }
-function spiderPos(s) {
-const L = Math.max(0, s.len + s.bob);
-return { x: s.x + Math.sin(s.swing) * L, y: Math.cos(s.swing) * L };
-}
+function spiderPos(s) { const L = Math.max(0, s.len + s.bob); return { x: s.x + Math.sin(s.swing) * L, y: Math.cos(s.swing) * L }; }
 function updateSpider(s, now, dt) {
 const w2 = 900 / Math.max(s.len, 20);
 s.swingV += (-w2 * Math.sin(s.swing) - s.swingV * 0.5 + dustRand(-1, 1) * 0.15) * dt;
-if (draft.active) {
-const sp = spiderPos(s);
-const w = draftWindAt(sp.x, sp.y);
-if (w) s.swingV += w.x * DRAFT_SPIDER_PUSH * dt;
-}
+if (draft.active) { const sp = spiderPos(s); const w = draftWindAt(sp.x, sp.y); if (w) s.swingV += w.x * DRAFT_SPIDER_PUSH * dt; }
 s.swing = Math.max(-0.5, Math.min(0.5, s.swing + s.swingV * dt));
 if (!s.flee && s.len > 10) {
 const rect = document.getElementById('container').getBoundingClientRect();
 const p = spiderPos(s);
 const d = Math.hypot(spider.mouseX - rect.left - p.x, spider.mouseY - rect.top - p.y);
-if (d < SPIDER_SCARE_RADIUS * s.scale) {
-s.flee = true;
-s.phase = 'ascend';
-s.bob = 0;
-s.swingV += dustRand(-0.6, 0.6);
-}
+if (d < SPIDER_SCARE_RADIUS * s.scale) { s.flee = true; s.phase = 'ascend'; s.bob = 0; s.swingV += dustRand(-0.6, 0.6); }
 }
 if (s.phase === 'descend') {
-if (now >= s.pauseUntil) {
-s.len += SPIDER_DESCEND_SPEED * dt;
-if (Math.random() < 0.6 * dt) s.pauseUntil = now + dustRand(300, 1200);
-}
-if (s.len >= s.target) {
-s.len = s.target;
-s.phase = 'hang';
-s.phaseStart = now;
-s.swingV += dustRand(-0.1, 0.1);
-}
+if (now >= s.pauseUntil) { s.len += SPIDER_DESCEND_SPEED * dt; if (Math.random() < 0.6 * dt) s.pauseUntil = now + dustRand(300, 1200); }
+if (s.len >= s.target) { s.len = s.target; s.phase = 'hang'; s.phaseStart = now; s.swingV += dustRand(-0.1, 0.1); }
 } else if (s.phase === 'hang') {
 const t = (now - s.phaseStart) / 1000;
 s.bob = 7 * Math.exp(-t * 4) * Math.sin(t * 14);
 if (now > s.twitchUntil && Math.random() < 0.5 * dt) s.twitchUntil = now + dustRand(200, 600);
-if (now - s.phaseStart > s.hangFor) {
-s.phase = 'ascend';
-s.bob = 0;
-}
+if (now - s.phaseStart > s.hangFor) { s.phase = 'ascend'; s.bob = 0; }
 } else {
 s.len -= (s.flee ? SPIDER_FLEE_SPEED : SPIDER_CLIMB_SPEED) * dt;
 if (s.len <= -14 * s.scale) return false;
@@ -1306,26 +1028,15 @@ return true;
 }
 function drawSpider(ctx, s, now) {
 const p = spiderPos(s);
-if (p.y > 0) {
-ctx.strokeStyle = 'rgba(230, 228, 220, 0.35)';
-ctx.lineWidth = 0.6;
-ctx.beginPath();
-ctx.moveTo(s.x, 0);
-ctx.lineTo(p.x, p.y);
-ctx.stroke();
-}
-ctx.save();
-ctx.translate(p.x, p.y);
-ctx.rotate(-s.swing);
-ctx.scale(s.scale, s.scale);
+if (p.y > 0) { ctx.strokeStyle = 'rgba(230, 228, 220, 0.35)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(s.x, 0); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-s.swing); ctx.scale(s.scale, s.scale);
 const moving = s.phase === 'ascend' || (s.phase === 'descend' && now >= s.pauseUntil);
 const twitch = now < s.twitchUntil;
 const amp = s.flee ? 0.45 : moving ? 0.22 : twitch ? 0.15 : 0.04;
 const speed = s.flee ? 24 : moving ? 12 : twitch ? 18 : 2;
 const t = now / 1000;
 const BASE = [60, 25, -10, -45].map(a => a * Math.PI / 180);
-ctx.strokeStyle = '#16110d';
-ctx.lineCap = 'round';
+ctx.strokeStyle = '#16110d'; ctx.lineCap = 'round';
 for (const side of [1, -1]) {
 for (let i = 0; i < 4; i++) {
 const phase = (i % 2 ? Math.PI : 0) + (side < 0 ? Math.PI : 0);
@@ -1335,52 +1046,27 @@ const kx = ox + side * Math.cos(a - 0.7) * 8;
 const ky = oy + Math.sin(a - 0.7) * 8;
 const fx = kx + side * Math.cos(a + 0.8) * 9.5;
 const fy = ky + Math.sin(a + 0.8) * 9.5;
-ctx.lineWidth = 1.2;
-ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(kx, ky); ctx.stroke();
-ctx.lineWidth = 0.9;
-ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(kx, ky); ctx.stroke();
+ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
 }
 }
-ctx.fillStyle = '#1b1511';
-ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = '#1b1511'; ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
 const g = ctx.createRadialGradient(-1.3, 3.5, 0, -1.3, 3.5, 3);
-g.addColorStop(0, 'rgba(140, 115, 90, 0.55)');
-g.addColorStop(1, 'rgba(140, 115, 90, 0)');
-ctx.fillStyle = g;
-ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
-ctx.fillStyle = '#231b15';
-ctx.beginPath(); ctx.ellipse(0, 12.5, 3, 3.3, 0, 0, Math.PI * 2); ctx.fill();
+g.addColorStop(0, 'rgba(140, 115, 90, 0.55)'); g.addColorStop(1, 'rgba(140, 115, 90, 0)');
+ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 5.5, 4.2, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = '#231b15'; ctx.beginPath(); ctx.ellipse(0, 12.5, 3, 3.3, 0, 0, Math.PI * 2); ctx.fill();
 ctx.fillStyle = 'rgba(210, 190, 150, 0.6)';
 ctx.beginPath(); ctx.arc(-0.9, 14.7, 0.5, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(0.9, 14.7, 0.5, 0, Math.PI * 2); ctx.fill();
 ctx.restore();
 }
-// ========== СКВОЗНЯК ==========
-const DRAFT_ENABLED = true;
-const DRAFT_GAP = [25000, 60000];
-const DRAFT_CHANCE = 0.6;
-const DRAFT_DURATION = [3000, 5000];
-const DRAFT_STRENGTH = 90;
-const DRAFT_SHED_RATE = 3;
-const DRAFT_SPIDER_PUSH = 0.012;
-const DRAFT_FLICKER_CHANCE = 0.3;
-const DRAFT_SOUND = true;
-const DRAFT_VOLUME = 0.15;
-const draft = {
-active: false, dir: 1, start: 0, duration: 0, timer: 0,
-env: 0, front: 0, t: 0,
-cassettes: [], audio: null, noise: null,
-};
-function setupDraft() {
-if (!DRAFT_ENABLED) return;
-scheduleDraft();
-}
+
+const DRAFT_ENABLED = true, DRAFT_GAP = [25000, 60000], DRAFT_CHANCE = 0.6, DRAFT_DURATION = [3000, 5000], DRAFT_STRENGTH = 90, DRAFT_SHED_RATE = 3, DRAFT_SPIDER_PUSH = 0.012, DRAFT_FLICKER_CHANCE = 0.3, DRAFT_SOUND = true, DRAFT_VOLUME = 0.15;
+const draft = { active: false, dir: 1, start: 0, duration: 0, timer: 0, env: 0, front: 0, t: 0, cassettes: [], audio: null, noise: null };
+function setupDraft() { if (!DRAFT_ENABLED) return; scheduleDraft(); }
 function scheduleDraft() {
 clearTimeout(draft.timer);
-draft.timer = setTimeout(() => {
-if (!draft.active && Math.random() < DRAFT_CHANCE) startDraft();
-scheduleDraft();
-}, dustRand(DRAFT_GAP[0], DRAFT_GAP[1]));
+draft.timer = setTimeout(() => { if (!draft.active && Math.random() < DRAFT_CHANCE) startDraft(); scheduleDraft(); }, dustRand(DRAFT_GAP[0], DRAFT_GAP[1]));
 }
 function draftWindAt(x, y) {
 if (!draft.active || draft.env <= 0) return null;
@@ -1392,31 +1078,22 @@ return { x: s * draft.dir, y: s * 0.12 * Math.sin(draft.t * 3 + x * 0.02 + y * 0
 }
 function applyDraft(p, dt, k) {
 if (!draft.active) return;
-const w = draftWindAt(p.x, p.y);
-if (!w) return;
+const w = draftWindAt(p.x, p.y); if (!w) return;
 const f = Math.min(1, Math.abs(w.x) / DRAFT_STRENGTH) * Math.min(1, dt * k);
-p.vx += (w.x - p.vx) * f;
-p.vy += (w.y - p.vy) * f;
+p.vx += (w.x - p.vx) * f; p.vy += (w.y - p.vy) * f;
 }
 function startDraft() {
 const W = LAYOUT.CONTAINER_W;
-draft.active = true;
-draft.dir = Math.random() < 0.5 ? -1 : 1;
-draft.start = performance.now();
-draft.duration = dustRand(DRAFT_DURATION[0], DRAFT_DURATION[1]);
+draft.active = true; draft.dir = Math.random() < 0.5 ? -1 : 1;
+draft.start = performance.now(); draft.duration = dustRand(DRAFT_DURATION[0], DRAFT_DURATION[1]);
 draft.cassettes = Array.from(document.querySelectorAll('.vhs-cassette'));
 if (DRAFT_SOUND) playDraftSound(draft.duration / 1000, draft.dir);
 if (state.isLightOn && Math.random() < DRAFT_FLICKER_CHANCE) {
-setTimeout(() => {
-if (!state.isLightOn) return;
-playRandomFlickerSound();
-startFlickerEffect(900);
-}, draft.duration * 0.35);
+setTimeout(() => { if (!state.isLightOn) return; playRandomFlickerSound(); startFlickerEffect(900); }, draft.duration * 0.35);
 }
 let last = draft.start;
 const frame = (now) => {
-const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
-last = now;
+const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05); last = now;
 const p = (now - draft.start) / draft.duration;
 if (p >= 1) { draft.active = false; draft.env = 0; return; }
 draft.env = Math.min(1, p / 0.1) * Math.pow(1 - p, 1.2);
@@ -1424,14 +1101,8 @@ const q = Math.min(1, p / 0.45);
 draft.front = draft.dir > 0 ? -150 + (W + 300) * q : W + 150 - (W + 300) * q;
 draft.t = now / 1000;
 if (Math.random() < DRAFT_SHED_RATE * dt * draft.env) {
-const near = draft.cassettes.filter(c =>
-Math.abs(c.offsetLeft + c.offsetWidth / 2 - draft.front) < 80
-&& c.style.opacity !== '0'
-&& (!TOP_DUST_ENABLED || isCassetteDusty(c)));
-if (near.length) {
-const c = near[Math.floor(Math.random() * near.length)];
-puffDust(cassetteRectInContainer(c), 'hover');
-}
+const near = draft.cassettes.filter(c => Math.abs(c.offsetLeft + c.offsetWidth / 2 - draft.front) < 80 && c.style.opacity !== '0' && (!TOP_DUST_ENABLED || isCassetteDusty(c)));
+if (near.length) puffDust(cassetteRectInContainer(near[Math.floor(Math.random() * near.length)]), 'hover');
 }
 requestAnimationFrame(frame);
 };
@@ -1439,409 +1110,447 @@ requestAnimationFrame(frame);
 }
 function playDraftSound(seconds, dir) {
 if (!state.audioEnabled) return;
-const AC = window.AudioContext || window.webkitAudioContext;
-if (!AC) return;
+const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
 try {
 if (!draft.audio) draft.audio = new AC();
-const ac = draft.audio;
-if (ac.state === 'suspended') ac.resume();
+const ac = draft.audio; if (ac.state === 'suspended') ac.resume();
 if (!draft.noise) {
-const len = ac.sampleRate * 2;
-const buf = ac.createBuffer(1, len, ac.sampleRate);
-const data = buf.getChannelData(0);
+const len = ac.sampleRate * 2; const buf = ac.createBuffer(1, len, ac.sampleRate); const data = buf.getChannelData(0);
 let lastOut = 0;
-for (let i = 0; i < len; i++) {
-lastOut = (lastOut + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-data[i] = lastOut * 3.5;
-}
+for (let i = 0; i < len; i++) { lastOut = (lastOut + 0.02 * (Math.random() * 2 - 1)) / 1.02; data[i] = lastOut * 3.5; }
 draft.noise = buf;
 }
-const t0 = ac.currentTime;
-const src = ac.createBufferSource();
-src.buffer = draft.noise;
-src.loop = true;
-const band = ac.createBiquadFilter();
-band.type = 'bandpass';
-band.Q.value = 0.8;
-band.frequency.setValueAtTime(250, t0);
-band.frequency.linearRampToValueAtTime(700, t0 + seconds * 0.4);
-band.frequency.linearRampToValueAtTime(300, t0 + seconds);
-const gain = ac.createGain();
-gain.gain.setValueAtTime(0.0001, t0);
+const t0 = ac.currentTime; const src = ac.createBufferSource(); src.buffer = draft.noise; src.loop = true;
+const band = ac.createBiquadFilter(); band.type = 'bandpass'; band.Q.value = 0.8;
+band.frequency.setValueAtTime(250, t0); band.frequency.linearRampToValueAtTime(700, t0 + seconds * 0.4); band.frequency.linearRampToValueAtTime(300, t0 + seconds);
+const gain = ac.createGain(); gain.gain.setValueAtTime(0.0001, t0);
 const steps = 8;
 for (let i = 1; i < steps; i++) {
-const f = i / steps;
-const env = Math.min(1, f / 0.2) * Math.pow(1 - f, 1.1);
+const f = i / steps; const env = Math.min(1, f / 0.2) * Math.pow(1 - f, 1.1);
 gain.gain.linearRampToValueAtTime(DRAFT_VOLUME * env * dustRand(0.6, 1), t0 + seconds * f);
 }
 gain.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
 let node = src.connect(band).connect(gain);
-if (ac.createStereoPanner) {
-const pan = ac.createStereoPanner();
-pan.pan.setValueAtTime(-0.8 * dir, t0);
-pan.pan.linearRampToValueAtTime(0.8 * dir, t0 + seconds * 0.5);
-node = node.connect(pan);
+if (ac.createStereoPanner) { const pan = ac.createStereoPanner(); pan.pan.setValueAtTime(-0.8 * dir, t0); pan.pan.linearRampToValueAtTime(0.8 * dir, t0 + seconds * 0.5); node = node.connect(pan); }
+node.connect(ac.destination); src.start(t0); src.stop(t0 + seconds + 0.1);
+} catch (e) {}
 }
-node.connect(ac.destination);
-src.start(t0);
-src.stop(t0 + seconds + 0.1);
-} catch (e) { /* без звука — не страшно */ }
-}
-// ========== СВЕЧЕНИЕ ВИДЕОМАГНИТОФОНА ==========
-const VCR_GLOW_ENABLED = true;
-const VCR_GLOW_DARK = 1;
-const VCR_GLOW_LIGHT = 0.2;
-const VCR_PULSE_DEFAULT_MS = 1500;
+
+const VCR_GLOW_ENABLED = true, VCR_GLOW_DARK = 1, VCR_GLOW_LIGHT = 0.2, VCR_PULSE_DEFAULT_MS = 1500;
 const VCR_LIGHTS = [
-{ x: 618, y: 552, w: 200, h: 80, color: '255, 50, 40',  alpha: 0.4 },
-{ x: 447, y: 548, w: 100, h: 80,  color: '80, 110, 255', alpha: 0.2 },
-{ x: 886, y: 540, w: 50, h: 50,  color: '80, 255, 120', alpha: 0.15 },
+{ x: 618, y: 552, w: 200, h: 80, color: '255, 50, 40', alpha: 0.4 },
+{ x: 447, y: 548, w: 100, h: 80, color: '80, 110, 255', alpha: 0.2 },
+{ x: 886, y: 540, w: 50, h: 50, color: '80, 255, 120', alpha: 0.15 },
 ];
 const vcr = { wrap: null, glows: [] };
 function setupVcrGlow() {
 if (!VCR_GLOW_ENABLED) return;
-const overlay = document.getElementById('overlayContainer');
-if (!overlay) return;
-const wrap = document.createElement('div');
-wrap.id = 'vcrGlow';
+const overlay = document.getElementById('overlayContainer'); if (!overlay) return;
+const wrap = document.createElement('div'); wrap.id = 'vcrGlow';
 vcr.glows = VCR_LIGHTS.map((l, i) => {
-const g = document.createElement('div');
-g.className = 'vcr-glow';
-g.style.left = l.x + 'px';
-g.style.top = l.y + 'px';
-g.style.width = l.w + 'px';
-g.style.height = l.h + 'px';
-g.style.background = `radial-gradient(ellipse at center,
-rgba(${l.color}, ${l.alpha}) 0%,
-rgba(${l.color}, ${(l.alpha * 0.55).toFixed(3)}) 25%,
-rgba(${l.color}, ${(l.alpha * 0.22).toFixed(3)}) 50%,
-rgba(${l.color}, ${(l.alpha * 0.06).toFixed(3)}) 75%,
-rgba(${l.color}, 0) 100%)`;
+const g = document.createElement('div'); g.className = 'vcr-glow';
+g.style.left = l.x + 'px'; g.style.top = l.y + 'px'; g.style.width = l.w + 'px'; g.style.height = l.h + 'px';
+g.style.background = `radial-gradient(ellipse at center, rgba(${l.color}, ${l.alpha}) 0%, rgba(${l.color}, ${(l.alpha * 0.55).toFixed(3)}) 25%, rgba(${l.color}, ${(l.alpha * 0.22).toFixed(3)}) 50%, rgba(${l.color}, ${(l.alpha * 0.06).toFixed(3)}) 75%, rgba(${l.color}, 0) 100%)`;
 g.style.animationDelay = `${-i * 1.3}s`;
-wrap.appendChild(g);
-return g;
+wrap.appendChild(g); return g;
 });
-overlay.insertBefore(wrap, overlay.firstChild);
-vcr.wrap = wrap;
-updateVcrGlowLight();
+overlay.insertBefore(wrap, overlay.firstChild); vcr.wrap = wrap; updateVcrGlowLight();
 }
-function updateVcrGlowLight() {
-if (!vcr.wrap) return;
-vcr.wrap.style.opacity = state.isLightOn ? VCR_GLOW_LIGHT : VCR_GLOW_DARK;
-}
+function updateVcrGlowLight() { if (!vcr.wrap) return; vcr.wrap.style.opacity = state.isLightOn ? VCR_GLOW_LIGHT : VCR_GLOW_DARK; }
 function pulseVcrGlow(durationMs) {
-if (!vcr.wrap || reducedMotion) return;
+if (!vcr.wrap) return;
 const duration = durationMs > 0 ? durationMs : VCR_PULSE_DEFAULT_MS;
 vcr.glows.forEach((g, i) => {
 if (typeof g.animate !== 'function') return;
-const peak = i === 0 ? 0.9 : 0.8;
-const steps = Math.max(3, Math.round(duration / 400));
+const peak = i === 0 ? 0.9 : 0.8; const steps = Math.max(3, Math.round(duration / 400));
 const frames = [{ opacity: 0.65, transform: 'translate(-50%, -50%) scale(1)' }];
 for (let s = 1; s < steps; s++) {
-const fade = s / steps;
-const k = (peak - 0.65) * (1 - fade) * dustRand(0.7, 1);
-frames.push({
-opacity: (0.65 + k).toFixed(3),
-transform: `translate(-50%, -50%) scale(${(1 + k * 0.15).toFixed(3)})`,
-});
+const fade = s / steps; const k = (peak - 0.65) * (1 - fade) * dustRand(0.7, 1);
+frames.push({ opacity: (0.65 + k).toFixed(3), transform: `translate(-50%, -50%) scale(${(1 + k * 0.15).toFixed(3)})` });
 }
 frames.push({ opacity: 0.65, transform: 'translate(-50%, -50%) scale(1)' });
 g.animate(frames, { duration, easing: 'ease-in-out' });
 });
 }
-// ========== СВЕТ ИЗ ЩЕЛЕЙ В ПОТОЛКЕ ==========
-const BEAMS_ENABLED = true;
-const BEAM_COUNT = [4, 6];
-const BEAM_ANGLE = 10;
-const BEAM_LENGTH = [260, 480];
-const BEAM_WIDTH = [3, 7];
-const BEAM_ALPHA = 0.13;
-const BEAM_BLUR = 2;
-const BEAM_GLOW_WIDTH = 5;
-const BEAM_COLOR = '255, 205, 140';
-const BEAM_POSTER_DIM = 0.5;
-const BEAM_MOTES = 70;
-const STEPS_ENABLED = true;
-const STEPS_GAP = [20000, 50000];
-const STEPS_CHANCE = 0.6;
-const STEPS_COUNT = [5, 9];
-const STEP_INTERVAL = 550;
-const STEP_STRIDE = 110;
-const STEP_DUST = 10;
-const ceiling = {
-ctx: null, beams: [], motes: [], sift: [],
-mix: 0, cleared: false,
-walker: null, stepsTimer: 0,
-};
+
+const BEAMS_ENABLED = true, BEAM_COUNT = [4, 6], BEAM_ANGLE = 10, BEAM_LENGTH = [260, 480], BEAM_WIDTH = [3, 7], BEAM_ALPHA = 0.13, BEAM_BLUR = 2, BEAM_GLOW_WIDTH = 5, BEAM_COLOR = '255, 205, 140', BEAM_POSTER_DIM = 0.5, BEAM_MOTES = 70;
+const STEPS_ENABLED = true, STEPS_GAP = [20000, 50000], STEPS_CHANCE = 0.6, STEPS_COUNT = [5, 9], STEP_INTERVAL = 550, STEP_STRIDE = 110, STEP_DUST = 10;
+const ceiling = { ctx: null, beams: [], motes: [], sift: [], mix: 0, cleared: false, walker: null, stepsTimer: 0 };
 function setupCeilingLight() {
 if (!BEAMS_ENABLED) return;
-const overlay = document.getElementById('overlayContainer');
-if (!overlay) return;
-const canvas = document.createElement('canvas');
-canvas.id = 'ceilingLight';
+const overlay = document.getElementById('overlayContainer'); if (!overlay) return;
+const canvas = document.createElement('canvas'); canvas.id = 'ceilingLight';
 overlay.insertBefore(canvas, overlay.firstChild);
-ceiling.ctx = setupDustCanvas('ceilingLight');
-if (!ceiling.ctx) return;
-const W = LAYOUT.CONTAINER_W;
-const n = Math.round(dustRand(BEAM_COUNT[0], BEAM_COUNT[1]));
+ceiling.ctx = setupDustCanvas('ceilingLight'); if (!ceiling.ctx) return;
+const W = LAYOUT.CONTAINER_W; const n = Math.round(dustRand(BEAM_COUNT[0], BEAM_COUNT[1]));
 const tilt = BEAM_ANGLE * Math.PI / 180;
 for (let i = 0; i < n; i++) {
 const seg = W / n;
-ceiling.beams.push({
-x0: seg * i + dustRand(0.15, 0.85) * seg,
-w: dustRand(BEAM_WIDTH[0], BEAM_WIDTH[1]),
-len: dustRand(BEAM_LENGTH[0], BEAM_LENGTH[1]),
-tan: Math.tan(tilt), cos: Math.cos(tilt),
-ph: dustRand(0, Math.PI * 2), sp: dustRand(0.2, 0.5),
-});
+ceiling.beams.push({ x0: seg * i + dustRand(0.15, 0.85) * seg, w: dustRand(BEAM_WIDTH[0], BEAM_WIDTH[1]), len: dustRand(BEAM_LENGTH[0], BEAM_LENGTH[1]), tan: Math.tan(tilt), cos: Math.cos(tilt), ph: dustRand(0, Math.PI * 2), sp: dustRand(0.2, 0.5) });
 }
 ceiling.beams.forEach(b => { b.sprite = buildBeamSprite(b); });
 for (let i = 0; i < BEAM_MOTES; i++) ceiling.motes.push(spawnBeamMote());
 ceiling.mix = state.isLightOn ? 0 : 1;
 let last = performance.now();
-const frame = (now) => {
-requestAnimationFrame(frame);
-const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05);
-last = now;
-updateCeilingLight(now, dt);
-};
+const frame = (now) => { requestAnimationFrame(frame); const dt = Math.min(Math.max((now - last) / 1000, 0), 0.05); last = now; updateCeilingLight(now, dt); };
 requestAnimationFrame(frame);
 if (STEPS_ENABLED) scheduleSteps();
 }
 function buildBeamSprite(b) {
-const pad = BEAM_BLUR * 3 + 4;
-const endY = b.len * b.cos;
-const endX = b.x0 + endY * b.tan;
+const pad = BEAM_BLUR * 3 + 4; const endY = b.len * b.cos; const endX = b.x0 + endY * b.tan;
 const halo = (b.w / 2) * BEAM_GLOW_WIDTH;
 const minX = Math.min(b.x0 - halo, endX - halo * 2.5) - pad;
 const maxX = Math.max(b.x0 + halo, endX + halo * 2.5) + pad;
 const w = maxX - minX, h = endY + pad;
 const dpr = Math.min(window.devicePixelRatio || 1, 2);
-const c = document.createElement('canvas');
-c.width = Math.ceil(w * dpr);
-c.height = Math.ceil(h * dpr);
-const x = c.getContext('2d');
-x.scale(dpr, dpr);
-x.translate(-minX, 0);
-x.globalCompositeOperation = 'lighter';
-if ('filter' in x) x.filter = `blur(${BEAM_BLUR}px)`;
+const c = document.createElement('canvas'); c.width = Math.ceil(w * dpr); c.height = Math.ceil(h * dpr);
+const x = c.getContext('2d'); x.scale(dpr, dpr); x.translate(-minX, 0);
+x.globalCompositeOperation = 'lighter'; if ('filter' in x) x.filter = `blur(${BEAM_BLUR}px)`;
 const layers = [[BEAM_GLOW_WIDTH, 0.25], [BEAM_GLOW_WIDTH * 0.45, 0.45], [1, 0.6]];
 for (const [widen, a] of layers) {
-const top = (b.w / 2) * widen, bot = top * 2.5;
-const I = BEAM_ALPHA * a;
+const top = (b.w / 2) * widen, bot = top * 2.5; const I = BEAM_ALPHA * a;
 const g = x.createLinearGradient(b.x0, 0, endX, endY);
-g.addColorStop(0, `rgba(${BEAM_COLOR}, ${I.toFixed(3)})`);
-g.addColorStop(0.35, `rgba(${BEAM_COLOR}, ${(I * 0.5).toFixed(3)})`);
-g.addColorStop(0.7, `rgba(${BEAM_COLOR}, ${(I * 0.15).toFixed(3)})`);
-g.addColorStop(1, `rgba(${BEAM_COLOR}, 0)`);
-x.fillStyle = g;
-x.beginPath();
-x.moveTo(b.x0 - top, 0);
-x.lineTo(b.x0 + top, 0);
-x.lineTo(endX + bot, endY);
-x.lineTo(endX - bot, endY);
-x.closePath();
-x.fill();
+g.addColorStop(0, `rgba(${BEAM_COLOR}, ${I.toFixed(3)})`); g.addColorStop(0.35, `rgba(${BEAM_COLOR}, ${(I * 0.5).toFixed(3)})`);
+g.addColorStop(0.7, `rgba(${BEAM_COLOR}, ${(I * 0.15).toFixed(3)})`); g.addColorStop(1, `rgba(${BEAM_COLOR}, 0)`);
+x.fillStyle = g; x.beginPath(); x.moveTo(b.x0 - top, 0); x.lineTo(b.x0 + top, 0); x.lineTo(endX + bot, endY); x.lineTo(endX - bot, endY); x.closePath(); x.fill();
 }
-x.fillStyle = `rgba(${BEAM_COLOR}, ${Math.min(1, BEAM_ALPHA * 1.2).toFixed(3)})`;
-x.fillRect(b.x0 - b.w / 2, 0, b.w, 1.5);
+x.fillStyle = `rgba(${BEAM_COLOR}, ${Math.min(1, BEAM_ALPHA * 1.2).toFixed(3)})`; x.fillRect(b.x0 - b.w / 2, 0, b.w, 1.5);
 return { canvas: c, x: minX, w, h };
 }
-function beamAtY(b, y) {
-const along = y / b.cos;
-return { cx: b.x0 + y * b.tan, hw: (b.w / 2) * (1 + 1.5 * along / b.len), k: along / b.len };
-}
+function beamAtY(b, y) { const along = y / b.cos; return { cx: b.x0 + y * b.tan, hw: (b.w / 2) * (1 + 1.5 * along / b.len), k: along / b.len }; }
 function beamLightAt(x, y) {
 let best = 0;
 for (const b of ceiling.beams) {
-if (y < 0) continue;
-const { cx, hw, k } = beamAtY(b, y);
-if (k >= 1) continue;
-const d = Math.abs(x - cx) / (hw * 1.6);
-if (d >= 1) continue;
+if (y < 0) continue; const { cx, hw, k } = beamAtY(b, y); if (k >= 1) continue;
+const d = Math.abs(x - cx) / (hw * 1.6); if (d >= 1) continue;
 best = Math.max(best, (1 - d) * (1 - k));
 }
 return best;
 }
 function spawnBeamMote() {
 const b = ceiling.beams[Math.floor(Math.random() * ceiling.beams.length)];
-const y = dustRand(0, b.len * b.cos * 0.9);
-const { cx, hw } = beamAtY(b, y);
-return {
-x: cx + dustRand(-hw, hw), y,
-vx: dustRand(-3, 3), vy: dustRand(-3, 3),
-size: Math.random() < 0.85 ? dustRand(0.5, 1.1) : dustRand(1.2, 1.8),
-alpha: dustRand(0.5, 1),
-};
+const y = dustRand(0, b.len * b.cos * 0.9); const { cx, hw } = beamAtY(b, y);
+return { x: cx + dustRand(-hw, hw), y, vx: dustRand(-3, 3), vy: dustRand(-3, 3), size: Math.random() < 0.85 ? dustRand(0.5, 1.1) : dustRand(1.2, 1.8), alpha: dustRand(0.5, 1) };
 }
 function updateCeilingLight(now, dt) {
-const ctx = ceiling.ctx;
-const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+const ctx = ceiling.ctx; const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
 const target = state.isLightOn ? 0 : (state.currentExpandedPoster ? BEAM_POSTER_DIM : 1);
 ceiling.mix += (target - ceiling.mix) * Math.min(1, dt * 3);
 ceiling.sift = ceiling.sift.filter(p => now - p.born < p.life);
-for (const p of ceiling.sift) {
-applyDraft(p, dt, 1.5);
-p.vy += 30 * dt;
-p.vx += dustRand(-1, 1) * 15 * dt - p.vx * 1.5 * dt;
-p.x += p.vx * dt;
-p.y += p.vy * dt;
-}
-if (ceiling.mix < 0.01) {
-if (!ceiling.cleared) { ctx.clearRect(0, 0, W, H); ceiling.cleared = true; }
-return;
-}
-ceiling.cleared = false;
-ctx.clearRect(0, 0, W, H);
-const t = now / 1000;
-ctx.globalCompositeOperation = 'lighter';
+for (const p of ceiling.sift) { applyDraft(p, dt, 1.5); p.vy += 30 * dt; p.vx += dustRand(-1, 1) * 15 * dt - p.vx * 1.5 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+if (ceiling.mix < 0.01) { if (!ceiling.cleared) { ctx.clearRect(0, 0, W, H); ceiling.cleared = true; } return; }
+ceiling.cleared = false; ctx.clearRect(0, 0, W, H);
+const t = now / 1000; ctx.globalCompositeOperation = 'lighter';
 for (const b of ceiling.beams) {
-const flick = 0.9 + 0.1 * Math.sin(t * b.sp * 2 * Math.PI + b.ph);
-const k = ceiling.mix * flick;
-if (k < 0.02) continue;
-ctx.globalAlpha = Math.min(1, k);
-ctx.drawImage(b.sprite.canvas, b.sprite.x, 0, b.sprite.w, b.sprite.h);
+const flick = 0.9 + 0.1 * Math.sin(t * b.sp * 2 * Math.PI + b.ph); const k = ceiling.mix * flick;
+if (k < 0.02) continue; ctx.globalAlpha = Math.min(1, k); ctx.drawImage(b.sprite.canvas, b.sprite.x, 0, b.sprite.w, b.sprite.h);
 }
 ctx.globalAlpha = 1;
 const drawMote = (p) => {
-const vis = beamLightAt(p.x, p.y) * ceiling.mix;
-if (vis < 0.02) return;
-ctx.globalAlpha = Math.min(1, p.alpha * vis * 1.6);
-ctx.beginPath();
-ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-ctx.fill();
+const vis = beamLightAt(p.x, p.y) * ceiling.mix; if (vis < 0.02) return;
+ctx.globalAlpha = Math.min(1, p.alpha * vis * 1.6); ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
 };
 ctx.fillStyle = 'rgb(255, 232, 195)';
 for (let i = 0; i < ceiling.motes.length; i++) {
 const p = ceiling.motes[i];
-p.vx += dustRand(-1, 1) * 12 * dt - p.vx * 0.6 * dt;
-p.vy += (dustRand(-1, 1) * 12 + 1.5) * dt - p.vy * 0.6 * dt;
-applyDraft(p, dt, 1.5);
-p.x += p.vx * dt;
-p.y += p.vy * dt;
-if (p.y < -5 || p.y > H || beamLightAt(p.x, p.y) === 0 && Math.random() < dt * 0.5) {
-ceiling.motes[i] = spawnBeamMote();
-continue;
-}
+p.vx += dustRand(-1, 1) * 12 * dt - p.vx * 0.6 * dt; p.vy += (dustRand(-1, 1) * 12 + 1.5) * dt - p.vy * 0.6 * dt;
+applyDraft(p, dt, 1.5); p.x += p.vx * dt; p.y += p.vy * dt;
+if (p.y < -5 || p.y > H || beamLightAt(p.x, p.y) === 0 && Math.random() < dt * 0.5) { ceiling.motes[i] = spawnBeamMote(); continue; }
 drawMote(p);
 }
-for (const p of ceiling.sift) {
-const k = (now - p.born) / p.life;
-const a = p.alpha;
-p.alpha = a * Math.min(1, (1 - k) * 3);
-drawMote(p);
-p.alpha = a;
-}
-ctx.globalAlpha = 1;
-ctx.globalCompositeOperation = 'source-over';
+for (const p of ceiling.sift) { const k = (now - p.born) / p.life; const a = p.alpha; p.alpha = a * Math.min(1, (1 - k) * 3); drawMote(p); p.alpha = a; }
+ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
 }
 function scheduleSteps() {
 clearTimeout(ceiling.stepsTimer);
-ceiling.stepsTimer = setTimeout(() => {
-if (!ceiling.walker && Math.random() < STEPS_CHANCE) startWalk();
-scheduleSteps();
-}, dustRand(STEPS_GAP[0], STEPS_GAP[1]));
+ceiling.stepsTimer = setTimeout(() => { if (!ceiling.walker && Math.random() < STEPS_CHANCE) startWalk(); scheduleSteps(); }, dustRand(STEPS_GAP[0], STEPS_GAP[1]));
 }
 function startWalk() {
-const W = LAYOUT.CONTAINER_W;
-const dir = Math.random() < 0.5 ? -1 : 1;
+const W = LAYOUT.CONTAINER_W; const dir = Math.random() < 0.5 ? -1 : 1;
 const count = Math.round(dustRand(STEPS_COUNT[0], STEPS_COUNT[1]));
 const startX = W / 2 - dir * (count * STEP_STRIDE) / 2 + dustRand(-100, 100);
-ceiling.walker = { x: startX, dir };
-let left = count;
+ceiling.walker = { x: startX, dir }; let left = count;
 const step = () => {
-const w = ceiling.walker;
-if (!w) return;
-if (left-- <= 0) {
-w.x += w.dir * 400;
-setTimeout(() => { ceiling.walker = null; }, 1200);
-return;
-}
+const w = ceiling.walker; if (!w) return;
+if (left-- <= 0) { w.x += w.dir * 400; setTimeout(() => { ceiling.walker = null; }, 1200); return; }
 w.x += w.dir * STEP_STRIDE * dustRand(0.85, 1.15);
 for (let i = 0; i < STEP_DUST; i++) {
-ceiling.sift.push({
-x: w.x + dustRand(-25, 25), y: dustRand(0, 4),
-vx: dustRand(-4, 4), vy: dustRand(0, 10),
-size: dustRand(0.5, 1.3), alpha: dustRand(0.6, 1),
-born: performance.now(), life: dustRand(2500, 4500),
-});
+ceiling.sift.push({ x: w.x + dustRand(-25, 25), y: dustRand(0, 4), vx: dustRand(-4, 4), vy: dustRand(0, 10), size: dustRand(0.5, 1.3), alpha: dustRand(0.6, 1), born: performance.now(), life: dustRand(2500, 4500) });
 }
 setTimeout(step, STEP_INTERVAL * dustRand(0.9, 1.1));
 };
 step();
 }
-function cassetteRectInContainer(cassette) {
-return {
-x: cassette.offsetLeft,
-y: cassette.offsetTop,
-w: cassette.offsetWidth,
-h: cassette.offsetHeight,
-};
-}
-// ========== МЕРЦАНИЕ ==========
-const FLICKER_DURATION = 1500;
-const FLICKER_MIN_GAP = 40;
-const FLICKER_MAX_GAP = 190;
-const FLICKER_BRIGHTNESS_LEVELS = [0.5, 0.65, 0.8, 0.95, 1.1, 1.25];
+function cassetteRectInContainer(cassette) { return { x: cassette.offsetLeft, y: cassette.offsetTop, w: cassette.offsetWidth, h: cassette.offsetHeight }; }
+
+const FLICKER_DURATION = 1500, FLICKER_MIN_GAP = 40, FLICKER_MAX_GAP = 190, FLICKER_BRIGHTNESS_LEVELS = [0.5, 0.65, 0.8, 0.95, 1.1, 1.25];
 function startFlickerEffect(duration = FLICKER_DURATION) {
-const scene = document.getElementById('scene');
-if (!scene) return;
-const generation = ++state.flickerGeneration;
-const startTime = performance.now();
-const baseBrightness = state.isLightOn ? 1 : 0.15;
-scene.style.transition = 'none';
+const scene = document.getElementById('scene'); if (!scene) return;
+const generation = ++state.flickerGeneration; const startTime = performance.now();
+const baseBrightness = state.isLightOn ? 1 : 0.15; scene.style.transition = 'none';
 function step() {
 if (generation !== state.flickerGeneration) return;
 const elapsed = performance.now() - startTime;
-if (elapsed >= duration) {
-scene.style.filter = `brightness(${baseBrightness})`;
-scene.style.transition = '';
-return;
-}
-const level = FLICKER_BRIGHTNESS_LEVELS[
-Math.floor(Math.random() * FLICKER_BRIGHTNESS_LEVELS.length)
-];
+if (elapsed >= duration) { scene.style.filter = `brightness(${baseBrightness})`; scene.style.transition = ''; return; }
+const level = FLICKER_BRIGHTNESS_LEVELS[Math.floor(Math.random() * FLICKER_BRIGHTNESS_LEVELS.length)];
 scene.style.filter = `brightness(${level})`;
-const nextDelay = FLICKER_MIN_GAP + Math.random() * (FLICKER_MAX_GAP - FLICKER_MIN_GAP);
-setTimeout(step, nextDelay);
+setTimeout(step, FLICKER_MIN_GAP + Math.random() * (FLICKER_MAX_GAP - FLICKER_MIN_GAP));
 }
 step();
 }
 function scheduleFlicker() {
 const delay = 1500 + Math.random() * 3000;
 state.flickerTimer = setTimeout(() => {
-if (state.audioEnabled && state.isLightOn && Math.random() < 0.12) {
-playRandomFlickerSound();
-startFlickerEffect(FLICKER_DURATION);
-}
+if (state.audioEnabled && state.isLightOn && Math.random() < 0.12) { playRandomFlickerSound(); startFlickerEffect(FLICKER_DURATION); }
 scheduleFlicker();
 }, delay);
 }
-// ========== СВЕТ ==========
+
 function toggleLight() {
 const scene = document.getElementById('scene');
 const lightSwitch = document.getElementById('lightSwitch');
 const overlayImage = document.getElementById('overlayImage');
 playSwitchSound();
 if (state.isLightOn) {
-state.flickerGeneration++;
-stopFlickerSounds();
-scene.style.transition = '';
-scene.style.filter = 'brightness(0.15)';
-lightSwitch.src = LIGHT_SWITCH_SRC.off;
-overlayImage.style.opacity = '1';
+state.flickerGeneration++; stopFlickerSounds();
+scene.style.transition = ''; scene.style.filter = 'brightness(0.15)';
+lightSwitch.src = LIGHT_SWITCH_SRC.off; overlayImage.style.opacity = '1';
 state.isLightOn = false;
+clearTimeout(mothFly.timer);
+mothFly.active = false;
+if (mothFly.ctx) mothFly.ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
 } else {
 scene.style.filter = 'brightness(1)';
-lightSwitch.src = LIGHT_SWITCH_SRC.on;
-overlayImage.style.opacity = '0.5';
+lightSwitch.src = LIGHT_SWITCH_SRC.on; overlayImage.style.opacity = '0.5';
 state.isLightOn = true;
-playRandomFlickerSound();
-startFlickerEffect(FLICKER_DURATION);
+playRandomFlickerSound(); startFlickerEffect(FLICKER_DURATION);
+scheduleMothFly();
 }
 updateVcrGlowLight();
 }
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+
+// ========== ЛЕТАЮЩИЙ МОТЫЛЁК ==========
+const MOTH_FLY_ENABLED = true;
+const MOTH_FLY_DELAY_MIN = 3000;
+const MOTH_FLY_DELAY_MAX = 10000;
+const MOTH_FLY_COOLDOWN_MIN = 10000;
+const MOTH_FLY_COOLDOWN_MAX = 30000;
+const MOTH_FLY_SCALE = 1.2;
+const MOTH_FLY_SHADOW = 0.25;
+const MOTH_FLY_COLORS = { fore: '#e2d1ab', hind: '#c9b38a', body: '#6e5940' };
+const MOTH_FLY_SHADOW_COLORS = { fore: '#140d05', hind: '#140d05', body: '#140d05' };
+const MOTH_SCARE_RADIUS = 80;
+const MOTH_FLEE_SPEED = 600;
+
+const mothFly = {
+    ctx: null, active: false, timer: null, path: [], progress: 0, speed: 0,
+    flap: 0, heading: 0, x: 0, y: 0, prevX: null, prevY: null, wigglePhase: 0,
+    isFleeing: false, fleeVx: 0, fleeVy: 0, mouseX: -1000, mouseY: -1000
+};
+
+function setupFlyingMoth() {
+    if (!MOTH_FLY_ENABLED) return;
+    mothFly.ctx = setupDustCanvas('mothFly');
+    if (!mothFly.ctx) return;
+}
+
+function scheduleMothFly() {
+    clearTimeout(mothFly.timer);
+    if (!state.isLightOn || mothFly.active) return;
+    const delay = dustRand(MOTH_FLY_DELAY_MIN, MOTH_FLY_DELAY_MAX);
+    mothFly.timer = setTimeout(startMothFlySequence, delay);
+}
+
+function startMothFlySequence() {
+    if (!state.isLightOn) { scheduleMothFly(); return; }
+    generateMothPath();
+    mothFly.active = true;
+    mothFly.progress = 0;
+    mothFly.flap = 0;
+    mothFly.wigglePhase = 0;
+    mothFly.isFleeing = false;
+    mothFly.fleeVx = 0;
+    mothFly.fleeVy = 0;
+    
+    // Инициализируем начальные координаты, чтобы не было мгновенного испуга при спавне
+    const p0 = mothFly.path[0];
+    mothFly.x = p0.x;
+    mothFly.y = p0.y;
+    mothFly.prevX = p0.x;
+    mothFly.prevY = p0.y;
+
+    const ctx = mothFly.ctx;
+    let last = performance.now();
+
+    const frame = (now) => {
+        if (!mothFly.active) return;
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+
+        ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+        
+        // При панике крылья машут гораздо быстрее
+        mothFly.flap += dt * Math.PI * 2 * (mothFly.isFleeing ? 30 : 14);
+
+        if (!mothFly.isFleeing) {
+            mothFly.progress += dt * mothFly.speed;
+            mothFly.wigglePhase += dt * 3.5;
+
+            // Проверка на приближение курсора (даём небольшую задержку progress > 0.05, чтобы мотылёк успел появиться)
+            if (mothFly.progress > 0.05) {
+                const dist = Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY);
+                if (dist < MOTH_SCARE_RADIUS) {
+                    mothFly.isFleeing = true;
+                    // Вектор ОТ курсора
+                    const dx = mothFly.x - mothFly.mouseX;
+                    const dy = mothFly.y - mothFly.mouseY;
+                    const len = Math.hypot(dx, dy) || 1;
+                    mothFly.fleeVx = (dx / len) * MOTH_FLEE_SPEED;
+                    mothFly.fleeVy = (dy / len) * MOTH_FLEE_SPEED;
+                    
+                    // Разворачиваем мотылька в сторону побега
+                    const target = Math.atan2(mothFly.fleeVy, mothFly.fleeVx) + Math.PI / 2;
+                    mothFly.heading = target;
+                }
+            }
+
+            if (mothFly.progress >= 1) {
+                mothFly.active = false;
+                ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+                const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
+                mothFly.timer = setTimeout(scheduleMothFly, cooldown);
+                return;
+            }
+
+            // Обычная траектория
+            const t = mothFly.progress;
+            const p0 = mothFly.path[0], p1 = mothFly.path[1], p2 = mothFly.path[2], p3 = mothFly.path[3];
+            let x = Math.pow(1-t,3)*p0.x + 3*Math.pow(1-t,2)*t*p1.x + 3*(1-t)*Math.pow(t,2)*p2.x + Math.pow(t,3)*p3.x;
+            let y = Math.pow(1-t,3)*p0.y + 3*Math.pow(1-t,2)*t*p1.y + 3*(1-t)*Math.pow(t,2)*p2.y + Math.pow(t,3)*p3.y;
+
+            const wiggleX = Math.sin(mothFly.wigglePhase * 1.5) * 15 + Math.sin(mothFly.wigglePhase * 2.8) * 8;
+            const wiggleY = Math.cos(mothFly.wigglePhase * 1.2) * 12 + Math.cos(mothFly.wigglePhase * 2.3) * 6;
+            x += wiggleX;
+            y += wiggleY;
+
+            if (mothFly.prevX !== null && mothFly.prevY !== null) {
+                const dx = x - mothFly.prevX;
+                const dy = y - mothFly.prevY;
+                if (Math.hypot(dx, dy) > 0.5) {
+                    const target = Math.atan2(dy, dx) + Math.PI / 2;
+                    let diff = target - mothFly.heading;
+                    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                    mothFly.heading += diff * Math.min(1, dt * 6);
+                }
+            }
+            
+            mothFly.prevX = x;
+            mothFly.prevY = y;
+            mothFly.x = x;
+            mothFly.y = y;
+        } else {
+            // Логика побега
+            mothFly.x += mothFly.fleeVx * dt;
+            mothFly.y += mothFly.fleeVy * dt;
+
+            // Если улетел далеко за пределы экрана, завершаем полёт
+            if (mothFly.x < -150 || mothFly.x > LAYOUT.CONTAINER_W + 150 || 
+                mothFly.y < -150 || mothFly.y > LAYOUT.CONTAINER_H + 150) {
+                mothFly.active = false;
+                ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+                const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
+                mothFly.timer = setTimeout(scheduleMothFly, cooldown);
+                return;
+            }
+        }
+
+        const open = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(mothFly.flap));
+
+        if (MOTH_FLY_SHADOW > 0) {
+            const sx = mothFly.x + 18;
+            const sy = mothFly.y + 22;
+            ctx.globalAlpha = MOTH_FLY_SHADOW;
+            ctx.filter = 'blur(2px)';
+            drawMothShape(ctx, sx, sy, mothFly.heading, open, MOTH_FLY_SCALE * 1.6, MOTH_FLY_SHADOW_COLORS);
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1;
+        }
+
+        ctx.globalAlpha = 1;
+        drawMothShape(ctx, mothFly.x, mothFly.y, mothFly.heading, open, MOTH_FLY_SCALE, MOTH_FLY_COLORS);
+
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+
+function generateMothPath() {
+    const W = LAYOUT.CONTAINER_W, H = LAYOUT.CONTAINER_H;
+    const margin = 80;
+    const sides = ['left', 'right', 'top', 'bottom'];
+    const entrySide = sides[Math.floor(Math.random() * sides.length)];
+    let exitSide = sides[Math.floor(Math.random() * sides.length)];
+    while (exitSide === entrySide) exitSide = sides[Math.floor(Math.random() * sides.length)];
+
+    const getPoint = (side) => {
+        let x, y;
+        if (side === 'left') { x = -margin; y = dustRand(margin, H - margin); }
+        else if (side === 'right') { x = W + margin; y = dustRand(margin, H - margin); }
+        else if (side === 'top') { x = dustRand(margin, W - margin); y = -margin; }
+        else { x = dustRand(margin, W - margin); y = H + margin; }
+        return { x, y };
+    };
+
+    const start = getPoint(entrySide);
+    const end = getPoint(exitSide);
+
+    const midX = (start.x + end.x) / 2 + dustRand(-250, 250);
+    const midY = (start.y + end.y) / 2 + dustRand(-180, 180);
+    const cp1 = { x: start.x + (midX - start.x) * dustRand(0.4, 0.7), y: start.y + (midY - start.y) * dustRand(0.4, 0.7) };
+    const cp2 = { x: end.x + (midX - end.x) * dustRand(0.4, 0.7), y: end.y + (midY - end.y) * dustRand(0.4, 0.7) };
+
+    mothFly.path = [start, cp1, cp2, end];
+    const duration = dustRand(5, 8);
+    mothFly.speed = 1 / duration;
+}
+
+function drawMothShape(ctx, x, y, heading, open, scale, colors) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(heading);
+    ctx.scale(scale, scale);
+
+    for (const s of [-1, 1]) {
+        ctx.fillStyle = colors.fore;
+        ctx.beginPath();
+        ctx.moveTo(0, -1.5);
+        ctx.quadraticCurveTo(s * 7 * open, -5, s * 8.5 * open, 1);
+        ctx.quadraticCurveTo(s * 4 * open, 2.5, 0, 1.5);
+        ctx.fill();
+
+        ctx.fillStyle = colors.hind;
+        ctx.beginPath();
+        ctx.moveTo(0, 0.5);
+        ctx.quadraticCurveTo(s * 5.5 * open, 1.5, s * 4.5 * open, 5);
+        ctx.quadraticCurveTo(s * 2 * open, 5.5, 0, 3.5);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = colors.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 1.1, 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = colors.body;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-0.4, -2.5); ctx.quadraticCurveTo(-1.5, -4.5, -2.5, -5);
+    ctx.moveTo(0.4, -2.5);  ctx.quadraticCurveTo(1.5, -4.5, 2.5, -5);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 async function initialize() {
 await Promise.all([preloadImages(), preloadAudio()]);
 state.allAssetsLoaded = true;
