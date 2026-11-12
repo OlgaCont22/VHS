@@ -376,7 +376,6 @@ const cassettes = [
 { cassette: './images/dream_vhs.jpg', poster: './images/dream_poster.JPG', desc: '2026. ФАНТАСТИКА, ТРИЛЛЕР. В надежде изменить свою жизнь Кэрол отправляется на экспериментальный виртуальный курорт. Вернувшись домой, она обнаруживает, что её место в семье занял идеальный робот-двойник, который не собирается уходить.' },
 { cassette: './images/woman_vhs.jpg', poster: './images/woman_poster.jpg', desc: '2025. ТРИЛЛЕР, ДРАМА, ДЕТЕКТИВ. Журналистка, получившая приглашение на роскошную суперъяхту, становится свидетельницей ночного убийства, но команда и влиятельные гости уверяют её, что соседняя десятая каюта всегда пустовала, а все пассажиры на месте.' },
 { cassette: './images/zavod_vhs.jpg', poster: './images/zavod_poter.jpg', desc: '2018. ДРАМА, БОЕВИК. Группа рабочих во главе с бывшим спецназовцем похищает владельца обанкротившегося завода, чтобы потребовать выкуп и восстановить справедливость.' },
-{ cassette: './images/paul_vhs.JPG', poster: './images/paul_poster.JPG', desc: '2011. ФАНТАСТИКА, КОМЕДИЯ. Двое британских гиков путешествуют по Америке и случайно спасают из секретной правительственной базы беглого пришельца с крайне скверным характером и земными привычками. Вместе они пускаются в бега от людей в черном.' },
 { cassette: './images/app_vhs.jpg', poster: './images/app_poster.jpg', desc: '2011. УЖАСЫ, ТРИЛЛЕР. Молодая пара, столкнувшаяся с жуткими паранормальными событиями в своём новом доме, выясняет, что их преследует злобная потусторонняя сущность, которую парень случайно призвал во время университетского эксперимента.' },
 { cassette: './images/angel_vhs.jpg', poster: './images/angel_poster.jpg', desc: '2005. ФЭНТЕЗИ, МЕЛОДРАМА. Отчаявшийся парижский мошенник, погрязший в смертельных долгах бандитам, решает покончить с собой, но на грани гибели спасает таинственную длинноногую незнакомку, которая оказывается его ангелом-хранителем.' },
 { cassette: './images/lake_vhs.jpg', poster: './images/lake_poster.jpg', desc: '2008. УЖАСЫ, ТРИЛЛЕР. Молодая пара становится объектом охоты со стороны жестоких местных подростков, превративших отдых в кровавую борьбу за выживание.' },
@@ -972,8 +971,14 @@ spider.mouseY = e.clientY;
 const container = document.getElementById('container');
 if (container) {
 const rect = container.getBoundingClientRect();
-mothFly.mouseX = e.clientX - rect.left;
-mothFly.mouseY = e.clientY - rect.top;
+const newX = e.clientX - rect.left;
+const newY = e.clientY - rect.top;
+// Сохраняем предыдущие координаты для определения движения мыши
+mothFly.lastMouseX = mothFly.mouseX;
+mothFly.lastMouseY = mothFly.mouseY;
+mothFly.mouseX = newX;
+mothFly.mouseY = newY;
+mothFly.mouseMoveTime = performance.now();
 }
 });
 scheduleSpider();
@@ -1337,12 +1342,16 @@ const MOTH_FLY_SHADOW = 0.25;
 const MOTH_FLY_COLORS = { fore: '#e2d1ab', hind: '#c9b38a', body: '#6e5940' };
 const MOTH_FLY_SHADOW_COLORS = { fore: '#140d05', hind: '#140d05', body: '#140d05' };
 const MOTH_SCARE_RADIUS = 80;
-const MOTH_FLEE_SPEED = 600;
+// Скорость убегания слегка выше обычной скорости полёта (~250 px/s), но не "реактивная"
+const MOTH_FLEE_SPEED = 320;
+// Время (в мс), в течение которого движение курсора считается активным
+const MOTH_MOUSE_MOVING_THRESHOLD = 150;
 
 const mothFly = {
 ctx: null, active: false, timer: null, path: [], progress: 0, speed: 0,
 flap: 0, heading: 0, x: 0, y: 0, prevX: null, prevY: null, wigglePhase: 0,
-isFleeing: false, fleeVx: 0, fleeVy: 0, mouseX: -1000, mouseY: -1000
+isFleeing: false, fleeVx: 0, fleeVy: 0, mouseX: -1000, mouseY: -1000,
+lastMouseX: -1000, lastMouseY: -1000, mouseMoveTime: 0
 };
 
 function setupFlyingMoth() {
@@ -1392,16 +1401,41 @@ mothFly.progress += dt * mothFly.speed;
 mothFly.wigglePhase += dt * 3.5;
 
 if (mothFly.progress > 0.05) {
-const dist = Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY);
-if (dist < MOTH_SCARE_RADIUS) {
-mothFly.isFleeing = true;
-const dx = mothFly.x - mothFly.mouseX;
-const dy = mothFly.y - mothFly.mouseY;
-const len = Math.hypot(dx, dy) || 1;
-mothFly.fleeVx = (dx / len) * MOTH_FLEE_SPEED;
-mothFly.fleeVy = (dy / len) * MOTH_FLEE_SPEED;
-const target = Math.atan2(mothFly.fleeVy, mothFly.fleeVx) + Math.PI / 2;
-mothFly.heading = target;
+// Движется ли курсор?
+const mouseIsMoving = (now - mothFly.mouseMoveTime) < MOTH_MOUSE_MOVING_THRESHOLD;
+const cursorDist = mouseIsMoving
+    ? Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY)
+    : Infinity;
+
+// Присутствует ли паук и близко ли он?
+let spiderDist = Infinity;
+let spiderX = 0, spiderY = 0;
+if (spider.active) {
+    const sp = spiderPos(spider.active);
+    spiderX = sp.x;
+    spiderY = sp.y;
+    spiderDist = Math.hypot(mothFly.x - spiderX, mothFly.y - spiderY);
+}
+
+const minDist = Math.min(cursorDist, spiderDist);
+if (minDist < MOTH_SCARE_RADIUS) {
+    mothFly.isFleeing = true;
+    // Убегаем от ближайшей угрозы
+    let threatX, threatY;
+    if (cursorDist <= spiderDist) {
+        threatX = mothFly.mouseX;
+        threatY = mothFly.mouseY;
+    } else {
+        threatX = spiderX;
+        threatY = spiderY;
+    }
+    const dx = mothFly.x - threatX;
+    const dy = mothFly.y - threatY;
+    const len = Math.hypot(dx, dy) || 1;
+    mothFly.fleeVx = (dx / len) * MOTH_FLEE_SPEED;
+    mothFly.fleeVy = (dy / len) * MOTH_FLEE_SPEED;
+    const target = Math.atan2(mothFly.fleeVy, mothFly.fleeVx) + Math.PI / 2;
+    mothFly.heading = target;
 }
 }
 
