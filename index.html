@@ -614,19 +614,19 @@ puffDust(cassetteRectInContainer(cassette), 'hover');
 }
 }
 function handleContainerMouseLeave(e) {
-const cassette = e.target.closest('.vhs-cassette');
-if (!cassette) return;
-setCassetteShift(cassette, 'none');
+    const cassette = e.target.closest('.vhs-cassette');
+    if (!cassette) return;
+    setCassetteShift(cassette, 'none');
 
-// Если кассета была наклонена изначально, сейчас выровнена, и не развёрнута в постер —
-// с некоторой вероятностью возвращаем её в исходный наклонённый вид
-if (cassette.dataset.initialLean &&
-    Math.abs(parseFloat(cassette.dataset.lean) || 0) < 0.01 &&
-    state.currentExpandedPoster?.dataset.cassetteId !== cassette.id &&
-    Math.random() < LEAN_RELEAN_CHANCE) {
-    const originalLean = parseFloat(cassette.dataset.initialLean);
-    requestAnimationFrame(() => animateLean(cassette, originalLean));
-}
+    // Шанс наклона для ЛЮБОЙ кассеты, не только изначально наклонённой
+    if (Math.abs(parseFloat(cassette.dataset.lean) || 0) < 0.01 &&
+        state.currentExpandedPoster?.dataset.cassetteId !== cassette.id &&
+        Math.random() < LEAN_RELEAN_CHANCE) {
+        const leanDeg = cassette.dataset.initialLean
+            ? parseFloat(cassette.dataset.initialLean)
+            : (Math.random() < 0.5 ? 1 : -1) * dustRand(LEAN_RANDOM_ANGLE[0], LEAN_RANDOM_ANGLE[1]);
+        requestAnimationFrame(() => animateLean(cassette, leanDeg));
+    }
 }
 
 function handleCassetteClick(cassette, poster, posterWidth) {
@@ -943,7 +943,7 @@ cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
 }
 
 const LEAN_ENABLED = true, LEAN_INTO_GAP = false, LEAN_GAP_ANGLE = [7, 11], LEAN_RANDOM_COUNT = [1, 2], LEAN_RANDOM_ANGLE = [1.2, 1.8], LEAN_STRAIGHTEN_MS = 450;
-const LEAN_RELEAN_CHANCE = 0.35; // Шанс, что кассета вернётся к наклону после ухода курсора / сворачивания постера
+const LEAN_RELEAN_CHANCE = 0.08; // Шанс, что кассета вернётся к наклону после ухода курсора / сворачивания постера
 
 function leanCassette(cassette, deg) {
     if (!cassette || !deg) return;
