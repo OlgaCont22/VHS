@@ -617,6 +617,16 @@ function handleContainerMouseLeave(e) {
 const cassette = e.target.closest('.vhs-cassette');
 if (!cassette) return;
 setCassetteShift(cassette, 'none');
+
+// Если кассета была наклонена изначально, сейчас выровнена, и не развёрнута в постер —
+// с некоторой вероятностью возвращаем её в исходный наклонённый вид
+if (cassette.dataset.initialLean &&
+    Math.abs(parseFloat(cassette.dataset.lean) || 0) < 0.01 &&
+    state.currentExpandedPoster?.dataset.cassetteId !== cassette.id &&
+    Math.random() < LEAN_RELEAN_CHANCE) {
+    const originalLean = parseFloat(cassette.dataset.initialLean);
+    requestAnimationFrame(() => animateLean(cassette, originalLean));
+}
 }
 
 function handleCassetteClick(cassette, poster, posterWidth) {
@@ -682,6 +692,15 @@ showTopDust(cassette);
 cassette.style.pointerEvents = 'auto';
 state.currentExpandedPoster = null;
 state.isAnimating = false;
+
+// Шанс, что кассета после сворачивания "неаккуратно" встанет на место и наклонится
+if (Math.random() < LEAN_RELEAN_CHANCE) {
+    const leanDeg = cassette.dataset.initialLean
+        ? parseFloat(cassette.dataset.initialLean)
+        : (Math.random() < 0.5 ? 1 : -1) * dustRand(LEAN_RANDOM_ANGLE[0], LEAN_RANDOM_ANGLE[1]);
+    animateLean(cassette, leanDeg);
+}
+
 if (typeof callback === 'function') callback();
 }, 300);
 }
@@ -924,12 +943,18 @@ cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
 }
 
 const LEAN_ENABLED = true, LEAN_INTO_GAP = false, LEAN_GAP_ANGLE = [7, 11], LEAN_RANDOM_COUNT = [1, 2], LEAN_RANDOM_ANGLE = [1.2, 1.8], LEAN_STRAIGHTEN_MS = 450;
+const LEAN_RELEAN_CHANCE = 0.35; // Шанс, что кассета вернётся к наклону после ухода курсора / сворачивания постера
+
 function leanCassette(cassette, deg) {
-if (!cassette || !deg) return;
-cassette.dataset.lean = deg.toFixed(2);
-const origin = `${deg > 0 ? GRID.CASSETTE_W : 0}px ${GRID.CASSETTE_H}px`;
-cassetteLayers(cassette).forEach(el => { el.style.transformOrigin = origin; });
-setCassetteShift(cassette, 'none');
+    if (!cassette || !deg) return;
+    // Сохраняем изначальный угол, чтобы его можно было восстановить
+    if (!cassette.dataset.initialLean) {
+        cassette.dataset.initialLean = deg.toFixed(2);
+    }
+    cassette.dataset.lean = deg.toFixed(2);
+    const origin = `${deg > 0 ? GRID.CASSETTE_W : 0}px ${GRID.CASSETTE_H}px`;
+    cassetteLayers(cassette).forEach(el => { el.style.transformOrigin = origin; });
+    setCassetteShift(cassette, 'none');
 }
 function setupLeaningCassettes(total) {
 if (!LEAN_ENABLED || total < 2) return;
@@ -958,6 +983,15 @@ layers.forEach(el => { el.style.transition = `transform ${LEAN_STRAIGHTEN_MS}ms 
 setTimeout(() => layers.forEach(el => { el.style.transition = ''; }), LEAN_STRAIGHTEN_MS + 50);
 }
 setCassetteShift(cassette, cassette.dataset.shift || 'none');
+}
+function animateLean(cassette, deg) {
+    if (!cassette || !deg) return;
+    const layers = cassetteLayers(cassette);
+    layers.forEach(el => {
+        el.style.transition = `transform ${LEAN_STRAIGHTEN_MS}ms cubic-bezier(0.3, 1.4, 0.5, 1)`;
+    });
+    leanCassette(cassette, deg);
+    setTimeout(() => layers.forEach(el => { el.style.transition = ''; }), LEAN_STRAIGHTEN_MS + 50);
 }
 
 const SPIDER_ENABLED = true, SPIDER_GAP = [15000, 40000], SPIDER_CHANCE = 0.6, SPIDER_ONLY_IN_LIGHT = true, SPIDER_DROP = [70, 260], SPIDER_HANG = [3000, 8000], SPIDER_SCARE_RADIUS = 70, SPIDER_SIZE = [0.85, 1.25], SPIDER_DESCEND_SPEED = 55, SPIDER_CLIMB_SPEED = 35, SPIDER_FLEE_SPEED = 170;
