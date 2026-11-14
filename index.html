@@ -353,6 +353,8 @@ const cassettes = [
 { cassette: './images/more_vhs.jpg', poster: './images/more_poster.jpg', desc: '2021. ДРАМА. Влюблённые подростки, сбежавшие от всех в заброшенный домик посреди глухого леса, пытаются разобраться в своих хрупких чувствах и ночных кошмарах о всемирном потопе.' },
 { cassette: './images/caveat_vhs.jpg', poster: './images/caveat_poster.jpg', desc: '2020. УЖАСЫ. Мужчина соглашается за деньги приглядеть за психически нестабильной Ольгой в заброшенном доме на уединённом острове, но по условиям договора даёт приковать себя длинной цепью.' },
 { cassette: './images/koteyka_vhs.jpg', poster: './images/koteyka_poster.jpg', desc: '2026. БОЕВИК, ФАНТАСТИКА, ТРИЛЛЕР. Кошка сражается с полчищами зомби, пытаясь доставить выжившим людям экспериментальную вакцину от зомби-вируса.' },
+{ cassette: './images/fuzz_vhs.JPG', poster: './images/fuzz_poster.JPG', desc: '2007. БОЕВИК, КОМЕДИЯ. Напарники расследуют убийства в британской глуши.' },
+{ cassette: './images/36_vhs.JPG', poster: './images/36_poster.JPG', desc: '2004. БОЕВИК, ТРИЛЛЕР, КРИМИНАЛ. Два бывших друга-полицейских вступают в жёсткую гонку за поимку банды грабителей инкассаторов, ведь победитель станет шефом уголовного розыска Парижа. Ради карьеры один из них идёт на предательство, превращая профессиональное соперничество в личную войну.' },
 { cassette: './images/zakl_vhs.jpg', poster: './images/zakl_poster.jpg', desc: '2025. УЖАСЫ. Экзорцисты помогают семье, которую преследует сущность из зеркал.' },
 { cassette: './images/x_vhs.jpg', poster: './images/x_poster.jpg', desc: '1993. ФАНТАСТИКА, ДЕТЕКТИВ, УЖАСЫ. Агенты ФБР сталкиваются со всяким сверхъестественным и не очень.' },
 { cassette: './images/better_vhs.jpg', poster: './images/better_poster.jpg', desc: '2012. ТРИЛЛЕР, ДРАМА, КРИМИНАЛ. Управляющий аукционного дома, влюбляется в загадочную молодую наследницу, что полностью переворачивает его тщательно выстроенную жизнь.' },
@@ -616,7 +618,6 @@ function handleContainerMouseLeave(e) {
     if (!cassette) return;
     setCassetteShift(cassette, 'none');
 
-    // Шанс наклона для ЛЮБОЙ кассеты, не только изначально наклонённой
     if (Math.abs(parseFloat(cassette.dataset.lean) || 0) < 0.01 &&
         state.currentExpandedPoster?.dataset.cassetteId !== cassette.id &&
         Math.random() < LEAN_RELEAN_CHANCE) {
@@ -691,7 +692,6 @@ cassette.style.pointerEvents = 'auto';
 state.currentExpandedPoster = null;
 state.isAnimating = false;
 
-// Шанс, что кассета после сворачивания "неаккуратно" встанет на место и наклонится
 if (Math.random() < LEAN_RELEAN_CHANCE) {
     const leanDeg = cassette.dataset.initialLean
         ? parseFloat(cassette.dataset.initialLean)
@@ -941,11 +941,10 @@ cassetteLayers(cassette).forEach(el => { el.style.transform = full; });
 }
 
 const LEAN_ENABLED = true, LEAN_INTO_GAP = false, LEAN_GAP_ANGLE = [7, 11], LEAN_RANDOM_COUNT = [1, 2], LEAN_RANDOM_ANGLE = [1.2, 1.8], LEAN_STRAIGHTEN_MS = 450;
-const LEAN_RELEAN_CHANCE = 0.08; // Шанс, что кассета вернётся к наклону после ухода курсора / сворачивания постера
+const LEAN_RELEAN_CHANCE = 0.08;
 
 function leanCassette(cassette, deg) {
     if (!cassette || !deg) return;
-    // Сохраняем изначальный угол, чтобы его можно было восстановить
     if (!cassette.dataset.initialLean) {
         cassette.dataset.initialLean = deg.toFixed(2);
     }
@@ -1005,7 +1004,6 @@ if (container) {
 const rect = container.getBoundingClientRect();
 const newX = e.clientX - rect.left;
 const newY = e.clientY - rect.top;
-// Сохраняем предыдущие координаты для определения движения мыши
 mothFly.lastMouseX = mothFly.mouseX;
 mothFly.lastMouseY = mothFly.mouseY;
 mothFly.mouseX = newX;
@@ -1352,7 +1350,7 @@ state.flickerGeneration++; stopFlickerSounds();
 scene.style.transition = ''; scene.style.filter = 'brightness(0.15)';
 lightSwitch.src = LIGHT_SWITCH_SRC.off; overlayImage.style.opacity = '1';
 state.isLightOn = false;
-clearTimeout(mothFly.timer); // Отменяем только запланированный вылет, но не прерываем текущий полёт
+clearTimeout(mothFly.timer);
 } else {
 scene.style.filter = 'brightness(1)';
 lightSwitch.src = LIGHT_SWITCH_SRC.on; overlayImage.style.opacity = '0.5';
@@ -1374,9 +1372,7 @@ const MOTH_FLY_SHADOW = 0.25;
 const MOTH_FLY_COLORS = { fore: '#e2d1ab', hind: '#c9b38a', body: '#6e5940' };
 const MOTH_FLY_SHADOW_COLORS = { fore: '#140d05', hind: '#140d05', body: '#140d05' };
 const MOTH_SCARE_RADIUS = 80;
-// Скорость убегания слегка выше обычной скорости полёта (~250 px/s), но не "реактивная"
 const MOTH_FLEE_SPEED = 320;
-// Время (в мс), в течение которого движение курсора считается активным
 const MOTH_MOUSE_MOVING_THRESHOLD = 150;
 
 const mothFly = {
@@ -1433,13 +1429,11 @@ mothFly.progress += dt * mothFly.speed;
 mothFly.wigglePhase += dt * 3.5;
 
 if (mothFly.progress > 0.05) {
-// Движется ли курсор?
 const mouseIsMoving = (now - mothFly.mouseMoveTime) < MOTH_MOUSE_MOVING_THRESHOLD;
 const cursorDist = mouseIsMoving
     ? Math.hypot(mothFly.x - mothFly.mouseX, mothFly.y - mothFly.mouseY)
     : Infinity;
 
-// Присутствует ли паук и близко ли он?
 let spiderDist = Infinity;
 let spiderX = 0, spiderY = 0;
 if (spider.active) {
@@ -1452,7 +1446,6 @@ if (spider.active) {
 const minDist = Math.min(cursorDist, spiderDist);
 if (minDist < MOTH_SCARE_RADIUS) {
     mothFly.isFleeing = true;
-    // Убегаем от ближайшей угрозы
     let threatX, threatY;
     if (cursorDist <= spiderDist) {
         threatX = mothFly.mouseX;
@@ -1474,7 +1467,6 @@ if (minDist < MOTH_SCARE_RADIUS) {
 if (mothFly.progress >= 1) {
 mothFly.active = false;
 ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
-// ПЛАНИРУЕМ СЛЕДУЮЩИЙ ВЫЛЕТ ТОЛЬКО ЕСЛИ СВЕТ ВКЛЮЧЕН
 if (state.isLightOn) {
 const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
 mothFly.timer = setTimeout(scheduleMothFly, cooldown);
@@ -1508,20 +1500,44 @@ mothFly.prevY = y;
 mothFly.x = x;
 mothFly.y = y;
 } else {
-mothFly.x += mothFly.fleeVx * dt;
-mothFly.y += mothFly.fleeVy * dt;
+    // === ОБНОВЛЁННАЯ ЛОГИКА ПОБЕГА С ВИЛЯНИЕМ ===
+    mothFly.wigglePhase += dt * 5; // Чуть быстрее виляем в панике
 
-if (mothFly.x < -150 || mothFly.x > LAYOUT.CONTAINER_W + 150 ||
-mothFly.y < -150 || mothFly.y > LAYOUT.CONTAINER_H + 150) {
-mothFly.active = false;
-ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
-// ПЛАНИРУЕМ СЛЕДУЮЩИЙ ВЫЛЕТ ТОЛЬКО ЕСЛИ СВЕТ ВКЛЮЧЕН
-if (state.isLightOn) {
-const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
-mothFly.timer = setTimeout(scheduleMothFly, cooldown);
-}
-return;
-}
+    // Нормализуем вектор скорости для получения перпендикуляра
+    const speed = Math.hypot(mothFly.fleeVx, mothFly.fleeVy) || 1;
+    const perpX = -mothFly.fleeVy / speed;
+    const perpY = mothFly.fleeVx / speed;
+
+    // Виляние, аналогичное обычному полёту, но преобразованное в поперечное смещение
+    const wiggle = Math.sin(mothFly.wigglePhase * 1.5) * 15 + Math.sin(mothFly.wigglePhase * 2.8) * 8;
+    
+    // Добавляем поперечное смещение к скорости (умножаем на dt для плавности и на коэффициент для заметности)
+    const wiggleOffsetX = perpX * wiggle * dt * 4;
+    const wiggleOffsetY = perpY * wiggle * dt * 4;
+
+    mothFly.x += mothFly.fleeVx * dt + wiggleOffsetX;
+    mothFly.y += mothFly.fleeVy * dt + wiggleOffsetY;
+
+    // Обновляем heading для отрисовки, чтобы мотылёк поворачивался в сторону виляния
+    const currentVx = mothFly.fleeVx + perpX * wiggle * 4;
+    const currentVy = mothFly.fleeVy + perpY * wiggle * 4;
+    if (Math.hypot(currentVx, currentVy) > 0.5) {
+        const target = Math.atan2(currentVy, currentVx) + Math.PI / 2;
+        let diff = target - mothFly.heading;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        mothFly.heading += diff * Math.min(1, dt * 8); // Чуть быстрее поворачивается в панике
+    }
+
+    if (mothFly.x < -150 || mothFly.x > LAYOUT.CONTAINER_W + 150 ||
+        mothFly.y < -150 || mothFly.y > LAYOUT.CONTAINER_H + 150) {
+        mothFly.active = false;
+        ctx.clearRect(0, 0, LAYOUT.CONTAINER_W, LAYOUT.CONTAINER_H);
+        if (state.isLightOn) {
+            const cooldown = dustRand(MOTH_FLY_COOLDOWN_MIN, MOTH_FLY_COOLDOWN_MAX);
+            mothFly.timer = setTimeout(scheduleMothFly, cooldown);
+        }
+        return;
+    }
 }
 
 const open = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(mothFly.flap));
